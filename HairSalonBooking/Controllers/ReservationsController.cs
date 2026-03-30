@@ -253,4 +253,26 @@ public class ReservationsController : Controller
         TempData["Success"] = "Rezerwacja została anulowana.";
         return RedirectToAction(nameof(MyReservations));
     }
+
+    public IActionResult Calendar()
+    {
+        return View();
+    }
+
+    public async Task<IActionResult> Events(DateTime start, DateTime end)
+    {
+        var events = await _context.AvailableSlots
+            .Include(s => s.Service)
+            .Where(s => s.StartTime >= start && s.EndTime <= end)
+            .Select(s => new
+            {
+                title = s.Service.Name + (s.IsBooked ? " (zajęty)" : " (wolny)"),
+                start = s.StartTime,
+                end = s.EndTime,
+                className = s.IsBooked ? "calendar-booked" : "calendar-free"
+            })
+            .ToListAsync();
+
+        return Json(events);
+    }
 }
