@@ -32,7 +32,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-    await DbInitializer.InitializeRolesAndAdminAsync(services);
+    await DbInitializer.InitializeAsync(services);
 }
 
 if (app.Environment.IsDevelopment())
