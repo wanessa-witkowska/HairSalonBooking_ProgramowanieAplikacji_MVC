@@ -1,0 +1,60 @@
+﻿@model HairSalonBooking.ViewModels.AdminDashboardViewModel
+
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="container py-4">
+    <h1 class="mb-4">Dashboard administratora</h1>
+
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm dashboard-card">
+                <div class="card-body">
+                    <h5>Wszystkie rezerwacje</h5>
+                    <p class="display-6">@Model.TotalReservations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm dashboard-card">
+                <div class="card-body">
+                    <h5>Oczekujące</h5>
+                    <p class="display-6">@Model.PendingReservations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm dashboard-card">
+                <div class="card-body">
+                    <h5>Zatwierdzone</h5>
+                    <p class="display-6">@Model.ApprovedReservations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm dashboard-card">
+                <div class="card-body">
+                    <h5>Odrzucone</h5>
+                    <p class="display-6">@Model.RejectedReservations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm dashboard-card">
+                <div class="card-body">
+                    <h5>Anulowane</h5>
+                    <p class="display-6">@Model.CancelledReservations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm dashboard-card">
+                <div class="card-body">
+                    <h5>Wolne terminy</h5>
+                    <p class="display-6">@Model.FreeSlots</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
