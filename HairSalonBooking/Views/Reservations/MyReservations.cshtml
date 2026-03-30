@@ -5,12 +5,27 @@
 }
 
 <div class="container py-4">
-    <h1 class="mb-4">Moje rezerwacje</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Moje rezerwacje</h1>
+        <a asp-action="Calendar" class="btn btn-outline-primary">Kalendarz</a>
+    </div>
 
     @if (TempData["Success"] is string success)
     {
         <div class="alert alert-success">@success</div>
     }
+
+    <form method="get" class="row g-3 mb-4">
+        <div class="col-md-4">
+            <select name="status" class="form-select" data-auto-submit="true">
+                <option value="">Wszystkie statusy</option>
+                @foreach (var status in Enum.GetValues(typeof(HairSalonBooking.Models.ReservationStatus)))
+                {
+                    <option value="@status" selected="@(ViewBag.Status?.ToString() == status!.ToString())">@status</option>
+                }
+            </select>
+        </div>
+    </form>
 
     <div class="table-responsive">
         <table class="table table-hover align-middle">
@@ -29,7 +44,7 @@
                     <tr>
                         <td>@item.Service.Name</td>
                         <td>@item.ReservationDate.ToString("dd.MM.yyyy HH:mm")</td>
-                        <td>@item.Status</td>
+                        <td><partial name="_ReservationStatusBadge" model="item.Status" /></td>
                         <td>@item.Notes</td>
                         <td class="d-flex gap-2">
                             @if (item.Status == HairSalonBooking.Models.ReservationStatus.Pending)

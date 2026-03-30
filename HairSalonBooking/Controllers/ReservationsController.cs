@@ -95,14 +95,24 @@ public class ReservationsController : Controller
         return RedirectToAction(nameof(MyReservations));
     }
 
-    public async Task<IActionResult> MyReservations()
+    public async Task<IActionResult> MyReservations(ReservationStatus? status)
     {
         var userId = _userManager.GetUserId(User)!;
 
-        var reservations = await _context.Reservations
+        var query = _context.Reservations
             .Include(r => r.Service)
             .Include(r => r.AvailableSlot)
             .Where(r => r.UserId == userId)
+            .AsQueryable();
+
+        if (status.HasValue)
+        {
+            query = query.Where(r => r.Status == status.Value);
+        }
+
+        ViewBag.Status = status;
+
+        var reservations = await query
             .OrderByDescending(r => r.ReservationDate)
             .ToListAsync();
 

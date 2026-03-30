@@ -1,0 +1,17 @@
+﻿@model HairSalonBooking.Models.ReservationStatus
+
+@switch (Model)
+{
+    case HairSalonBooking.Models.ReservationStatus.Pending:
+        <span class="badge bg-warning text-dark">Oczekująca</span>
+        break;
+    case HairSalonBooking.Models.ReservationStatus.Approved:
+        <span class="badge bg-success">Zatwierdzona</span>
+        break;
+    case HairSalonBooking.Models.ReservationStatus.Rejected:
+        <span class="badge bg-danger">Odrzucona</span>
+        break;
+    case HairSalonBooking.Models.ReservationStatus.Cancelled:
+        <span class="badge bg-secondary">Anulowana</span>
+        break;
+}
