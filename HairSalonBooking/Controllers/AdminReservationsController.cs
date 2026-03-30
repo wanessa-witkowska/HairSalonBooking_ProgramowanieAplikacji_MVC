@@ -1,5 +1,6 @@
 ﻿using HairSalonBooking.Data;
 using HairSalonBooking.Models;
+using HairSalonBooking.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,10 +11,13 @@ namespace HairSalonBooking.Controllers;
 public class AdminReservationsController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IEmailService _emailService;
 
-    public AdminReservationsController(ApplicationDbContext context)
+
+    public AdminReservationsController(ApplicationDbContext context, IEmailService emailService)
     {
         _context = context;
+        _emailService = emailService;
     }
 
     public async Task<IActionResult> Index(ReservationStatus? status)
@@ -44,6 +48,8 @@ public class AdminReservationsController : Controller
     {
         var reservation = await _context.Reservations
             .Include(r => r.AvailableSlot)
+            .Include(r => r.User)
+            .Include(r => r.Service)
             .FirstOrDefaultAsync(r => r.Id == id);
 
         if (reservation is null)
@@ -55,6 +61,11 @@ public class AdminReservationsController : Controller
         reservation.AvailableSlot.IsBooked = true;
 
         await _context.SaveChangesAsync();
+
+        await _emailService.SendAsync(
+            reservation.User.Email!,
+            "Twoja rezerwacja została zatwierdzona",
+            $"<h2>Rezerwacja zatwierdzona</h2><p>Usługa: <strong>{reservation.Service.Name}</strong></p><p>Termin: <strong>{reservation.ReservationDate:dd.MM.yyyy HH:mm}</strong></p>");
 
         TempData["Success"] = "Rezerwacja została zatwierdzona.";
         return RedirectToAction(nameof(Index));

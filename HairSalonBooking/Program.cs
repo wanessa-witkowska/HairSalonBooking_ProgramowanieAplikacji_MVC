@@ -1,5 +1,6 @@
 using HairSalonBooking.Data;
 using HairSalonBooking.Models;
+using HairSalonBooking.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -27,6 +28,10 @@ builder.Services.AddDefaultIdentity<AppUser>(options =>
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 builder.Services.AddValidation();
+
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.AddTransient<IEmailService, EmailService>();
+
 
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
