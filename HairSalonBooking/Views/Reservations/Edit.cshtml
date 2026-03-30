@@ -1,0 +1,41 @@
+﻿@model HairSalonBooking.ViewModels.ReservationEditViewModel
+
+@{
+    ViewData["Title"] = "Edytuj rezerwację";
+}
+
+<div class="container py-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h1 class="mb-3">Edytuj rezerwację</h1>
+
+            <p><strong>Usługa:</strong> @Model.ServiceName</p>
+
+            <form asp-action="Edit" method="post">
+                <input asp-for="ReservationId" type="hidden" />
+                <input asp-for="ServiceId" type="hidden" />
+
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="mb-3">
+                    <label asp-for="AvailableSlotId" class="form-label"></label>
+                    <select asp-for="AvailableSlotId" asp-items="Model.SlotOptions" class="form-select"></select>
+                    <span asp-validation-for="AvailableSlotId" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Notes" class="form-label"></label>
+                    <textarea asp-for="Notes" class="form-control" rows="4"></textarea>
+                    <span asp-validation-for="Notes" class="text-danger"></span>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Zapisz zmiany</button>
+                <a asp-action="MyReservations" class="btn btn-outline-secondary">Powrót</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

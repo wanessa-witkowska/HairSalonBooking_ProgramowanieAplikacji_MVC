@@ -126,4 +126,121 @@ public class ReservationsController : Controller
             Selected = s.Id == selectedSlotId
         }).ToList();
     }
+
+    public async Task<IActionResult> Edit(int id)
+    {
+        var userId = _userManager.GetUserId(User)!;
+
+        var reservation = await _context.Reservations
+            .Include(r => r.Service)
+            .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
+
+        if (reservation is null)
+        {
+            return NotFound();
+        }
+
+        if (reservation.Status != ReservationStatus.Pending)
+        {
+            TempData["Success"] = "Edytować można tylko rezerwacje oczekujące.";
+            return RedirectToAction(nameof(MyReservations));
+        }
+
+        var model = new ReservationEditViewModel
+        {
+            ReservationId = reservation.Id,
+            ServiceId = reservation.ServiceId,
+            ServiceName = reservation.Service.Name,
+            AvailableSlotId = reservation.AvailableSlotId,
+            Notes = reservation.Notes,
+            SlotOptions = await BuildSlotOptionsAsync(reservation.ServiceId, reservation.AvailableSlotId)
+        };
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(ReservationEditViewModel model)
+    {
+        var userId = _userManager.GetUserId(User)!;
+
+        var reservation = await _context.Reservations
+            .Include(r => r.Service)
+            .Include(r => r.AvailableSlot)
+            .FirstOrDefaultAsync(r => r.Id == model.ReservationId && r.UserId == userId);
+
+        if (reservation is null)
+        {
+            return NotFound();
+        }
+
+        if (reservation.Status != ReservationStatus.Pending)
+        {
+            return RedirectToAction(nameof(MyReservations));
+        }
+
+        var selectedSlot = await _context.AvailableSlots
+            .FirstOrDefaultAsync(s =>
+                s.Id == model.AvailableSlotId &&
+                s.ServiceId == reservation.ServiceId &&
+                (!s.IsBooked || s.Id == reservation.AvailableSlotId) &&
+                s.StartTime > DateTime.Now);
+
+        if (selectedSlot is null)
+        {
+            ModelState.AddModelError(nameof(model.AvailableSlotId), "Wybrany termin nie jest dostępny.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            model.ServiceName = reservation.Service.Name;
+            model.SlotOptions = await BuildSlotOptionsAsync(reservation.ServiceId, reservation.AvailableSlotId);
+            return View(model);
+        }
+
+        if (reservation.AvailableSlotId != model.AvailableSlotId)
+        {
+            reservation.AvailableSlot.IsBooked = false;
+            selectedSlot!.IsBooked = true;
+            reservation.AvailableSlotId = selectedSlot.Id;
+            reservation.ReservationDate = selectedSlot.StartTime;
+        }
+
+        reservation.Notes = model.Notes;
+
+        await _context.SaveChangesAsync();
+
+        TempData["Success"] = "Rezerwacja została zaktualizowana.";
+        return RedirectToAction(nameof(MyReservations));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Cancel(int id)
+    {
+        var userId = _userManager.GetUserId(User)!;
+
+        var reservation = await _context.Reservations
+            .Include(r => r.AvailableSlot)
+            .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
+
+        if (reservation is null)
+        {
+            return NotFound();
+        }
+
+        if (reservation.Status == ReservationStatus.Cancelled || reservation.Status == ReservationStatus.Rejected)
+        {
+            return RedirectToAction(nameof(MyReservations));
+        }
+
+        reservation.Status = ReservationStatus.Cancelled;
+        reservation.AvailableSlot.IsBooked = false;
+
+        await _context.SaveChangesAsync();
+
+        TempData["Success"] = "Rezerwacja została anulowana.";
+        return RedirectToAction(nameof(MyReservations));
+    }
 }
