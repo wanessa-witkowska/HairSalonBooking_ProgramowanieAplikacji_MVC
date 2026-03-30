@@ -1,0 +1,65 @@
+@model IEnumerable<HairSalonBooking.Models.Reservation>
+
+@{
+    ViewData["Title"] = "Rezerwacje";
+}
+
+<div class="container py-4">
+    <h1 class="mb-4">Panel administratora - rezerwacje</h1>
+
+    @if (TempData["Success"] is string success)
+    {
+        <div class="alert alert-success">@success</div>
+    }
+
+    <form method="get" class="row g-3 mb-4">
+        <div class="col-md-4">
+            <select name="status" class="form-select" data-auto-submit="true">
+                <option value="">Wszystkie statusy</option>
+                @foreach (var status in Enum.GetValues(typeof(HairSalonBooking.Models.ReservationStatus)))
+                {
+                    <option value="@status" selected="@(ViewBag.Status?.ToString() == status!.ToString())">@status</option>
+                }
+            </select>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Klient</th>
+                    <th>Usługa</th>
+                    <th>Data</th>
+                    <th>Status</th>
+                    <th>Akcje</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.User.Email</td>
+                        <td>@item.Service.Name</td>
+                        <td>@item.ReservationDate.ToString("dd.MM.yyyy HH:mm")</td>
+                        <td><partial name="_ReservationStatusBadge" model="item.Status" /></td>
+                        <td class="d-flex gap-2">
+                            @if (item.Status == HairSalonBooking.Models.ReservationStatus.Pending)
+                            {
+                                <form asp-action="Approve" method="post">
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="btn btn-sm btn-success">Zatwierdź</button>
+                                </form>
+
+                                <form asp-action="Reject" method="post">
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="btn btn-sm btn-danger">Odrzuć</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
