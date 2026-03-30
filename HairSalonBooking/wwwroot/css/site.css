@@ -1,31 +1,103 @@
+:root {
+    --color-bg: #faf7f2;
+    --color-surface: #ffffff;
+    --color-primary: #8b5e83;
+    --color-primary-dark: #6f4969;
+    --color-text: #2f2a2e;
+    --color-muted: #7a6d74;
+    --color-accent: #c9a66b;
+    --color-success: #5e8b7e;
+    --color-danger: #b85c5c;
+    --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.08);
+    --radius-lg: 1.25rem;
+}
+
 html {
-  font-size: 14px;
-}
-
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
+    font-size: 14px;
 }
 
 body {
-  margin-bottom: 60px;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
+.salon-navbar {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
 }
 
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
+.salon-footer {
+    background: #241f23;
+    color: #f4eef2;
+}
+
+.hero-section {
+    background: linear-gradient(135deg, #8b5e83, #c9a66b);
+    color: white;
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+}
+
+.hero-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.28);
+    padding: .45rem .85rem;
+    border-radius: 999px;
+}
+
+.hero-card {
+    background: rgba(255,255,255,0.14);
+    backdrop-filter: blur(8px);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    border: 1px solid rgba(255,255,255,0.22);
+}
+
+.card,
+.dashboard-card {
+    border: none;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+}
+
+.service-card .card-title {
+    color: var(--color-primary);
+}
+
+.btn-primary {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+    .btn-primary:hover,
+    .btn-primary:focus {
+        background: var(--color-primary-dark);
+        border-color: var(--color-primary-dark);
+    }
+
+.btn-success {
+    background: var(--color-success);
+    border-color: var(--color-success);
+}
+
+.table {
+    background: var(--color-surface);
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.alert {
+    border-radius: 1rem;
+}
+
+.fc .calendar-free {
+    background-color: #5e8b7e !important;
+    border-color: #5e8b7e !important;
+}
+
+.fc .calendar-booked {
+    background-color: #b85c5c !important;
+    border-color: #b85c5c !important;
 }
