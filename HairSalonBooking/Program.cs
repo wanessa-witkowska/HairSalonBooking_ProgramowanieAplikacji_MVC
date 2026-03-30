@@ -21,6 +21,7 @@ builder.Services.AddDefaultIdentity<AppUser>(options =>
     options.Password.RequireUppercase = true;
     options.Password.RequiredLength = 6;
 })
+.AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddControllersWithViews();
@@ -28,6 +29,11 @@ builder.Services.AddRazorPages();
 builder.Services.AddValidation();
 
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    await DbInitializer.InitializeRolesAndAdminAsync(services);
+}
 
 if (app.Environment.IsDevelopment())
 {
