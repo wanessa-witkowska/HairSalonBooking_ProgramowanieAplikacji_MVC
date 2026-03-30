@@ -16,10 +16,35 @@ html {
     font-size: 14px;
 }
 
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
 body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
     background: var(--color-bg);
     color: var(--color-text);
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.hero-section {
+    background: linear-gradient(135deg, #8b5e83, #c9a66b);
+    color: white;
+    display: flex;
+    align-items: center;
+}
+
+.hero-full {
+    flex: 1;
 }
 
 .salon-navbar {
@@ -27,17 +52,11 @@ body {
 }
 
 .salon-footer {
+    margin-top: auto;
     background: #241f23;
     color: #f4eef2;
 }
 
-.hero-section {
-    background: linear-gradient(135deg, #8b5e83, #c9a66b);
-    color: white;
-    min-height: 70vh;
-    display: flex;
-    align-items: center;
-}
 
 .hero-badge {
     display: inline-block;
@@ -101,3 +120,73 @@ body {
     background-color: #b85c5c !important;
     border-color: #b85c5c !important;
 }
+
+.identity-page {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    background: linear-gradient(135deg, #8b5e83, #c9a66b);
+}
+
+.identity-card {
+    width: 100%;
+    max-width: 520px;
+    background: rgba(255, 255, 255, 0.96);
+    border-radius: 1.5rem;
+    padding: 2.5rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+}
+
+.identity-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+    .identity-header h1 {
+        color: var(--color-primary);
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+    }
+
+    .identity-header p {
+        color: var(--color-muted);
+        margin-bottom: 0;
+    }
+
+.identity-input {
+    min-height: 48px;
+    border-radius: 0.9rem;
+    border: 1px solid #d8c8d3;
+    padding: 0.75rem 1rem;
+}
+
+    .identity-input:focus {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 0.2rem rgba(139, 94, 131, 0.15);
+    }
+
+.identity-btn {
+    min-height: 50px;
+    border-radius: 0.9rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.identity-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: center;
+}
+
+    .identity-links a {
+        color: var(--color-primary);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+        .identity-links a:hover {
+            text-decoration: underline;
+        }
