@@ -13,13 +13,34 @@ public class ServicesController : Controller
         _context = context;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string? searchTerm, string? category)
     {
-        var services = await _context.Services
+        var query = _context.Services
             .Where(s => s.IsActive)
-            .OrderBy(s => s.Name)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(s =>
+                s.Name.Contains(searchTerm) ||
+                s.Description.Contains(searchTerm));
+        }
+
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            query = query.Where(s => s.Category == category);
+        }
+
+        ViewBag.SearchTerm = searchTerm;
+        ViewBag.Category = category;
+        ViewBag.Categories = await _context.Services
+            .Where(s => s.IsActive)
+            .Select(s => s.Category)
+            .Distinct()
+            .OrderBy(c => c)
             .ToListAsync();
 
+        var services = await query.OrderBy(s => s.Name).ToListAsync();
         return View(services);
     }
 

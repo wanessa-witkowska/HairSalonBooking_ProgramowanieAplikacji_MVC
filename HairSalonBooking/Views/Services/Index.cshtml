@@ -2,10 +2,29 @@
 
 @{
     ViewData["Title"] = "Usługi";
+    var categories = ViewBag.Categories as List<string> ?? new();
 }
 
 <div class="container py-4">
     <h1 class="mb-4">Nasze usługi</h1>
+
+    <form method="get" class="row g-3 mb-4">
+        <div class="col-md-6">
+            <input type="text" name="searchTerm" value="@ViewBag.SearchTerm" class="form-control" placeholder="Szukaj usługi..." />
+        </div>
+        <div class="col-md-4">
+            <select name="category" class="form-select">
+                <option value="">Wszystkie kategorie</option>
+                @foreach (var category in categories)
+                {
+                    <option value="@category" selected="@(ViewBag.Category == category)">@category</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2 d-grid">
+            <button type="submit" class="btn btn-primary">Szukaj</button>
+        </div>
+    </form>
 
     <div class="row g-4">
         @foreach (var item in Model)
