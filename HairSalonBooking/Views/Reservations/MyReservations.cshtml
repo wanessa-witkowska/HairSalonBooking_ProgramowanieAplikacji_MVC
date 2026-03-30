@@ -1,0 +1,38 @@
+﻿@model IEnumerable<HairSalonBooking.Models.Reservation>
+
+@{
+    ViewData["Title"] = "Moje rezerwacje";
+}
+
+<div class="container py-4">
+    <h1 class="mb-4">Moje rezerwacje</h1>
+
+    @if (TempData["Success"] is string success)
+    {
+        <div class="alert alert-success">@success</div>
+    }
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Usługa</th>
+                    <th>Data</th>
+                    <th>Status</th>
+                    <th>Uwagi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.Service.Name</td>
+                        <td>@item.ReservationDate.ToString("dd.MM.yyyy HH:mm")</td>
+                        <td>@item.Status</td>
+                        <td>@item.Notes</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
