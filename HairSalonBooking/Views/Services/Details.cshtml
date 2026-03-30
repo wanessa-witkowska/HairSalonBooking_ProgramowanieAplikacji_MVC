@@ -1,0 +1,22 @@
+﻿@model HairSalonBooking.Models.Service
+
+@{
+    ViewData["Title"] = "Szczegóły usługi";
+}
+
+<div class="container py-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h1>@Model.Name</h1>
+            <p class="text-muted">@Model.Category</p>
+            <p>@Model.Description</p>
+            <p><strong>Cena:</strong> @Model.Price.ToString("0.00") zł</p>
+            <p><strong>Czas trwania:</strong> @Model.DurationMinutes min</p>
+
+            <div class="d-flex gap-2">
+                <a asp-controller="Reservations" asp-action="Create" asp-route-serviceId="@Model.Id" class="btn btn-success">Zarezerwuj</a>
+                <a asp-controller="Services" asp-action="Index" class="btn btn-outline-secondary">Powrót</a>
+            </div>
+        </div>
+    </div>
+</div>
