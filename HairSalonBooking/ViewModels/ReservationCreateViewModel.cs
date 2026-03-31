@@ -5,18 +5,17 @@ namespace HairSalonBooking.ViewModels;
 
 public class ReservationCreateViewModel
 {
-    public int ServiceId { get; set; }
-    public string ServiceName { get; set; } = string.Empty;
-    public decimal Price { get; set; }
-    public int DurationMinutes { get; set; }
+    [Required(ErrorMessage = "Wybierz usługę.")]
+    [Display(Name = "Usługa")]
+    public int? ServiceId { get; set; }
 
-    [Required]
+    [Required(ErrorMessage = "Wybierz termin.")]
     [Display(Name = "Termin")]
-    public int AvailableSlotId { get; set; }
+    public int? AvailableSlotId { get; set; }
 
-    [StringLength(500)]
+    [StringLength(500, ErrorMessage = "Uwagi mogą mieć maksymalnie 500 znaków.")]
     [Display(Name = "Uwagi")]
     public string? Notes { get; set; }
 
-    public List<SelectListItem> SlotOptions { get; set; } = new();
+    public List<SelectListItem> ServiceOptions { get; set; } = new();
 }

@@ -21,58 +21,105 @@ public class ReservationsController : Controller
         _userManager = userManager;
     }
 
-    public async Task<IActionResult> Create(int serviceId)
+    public async Task<IActionResult> Create(int? serviceId)
     {
-        var service = await _context.Services
-            .FirstOrDefaultAsync(s => s.Id == serviceId && s.IsActive);
+        var activeServices = await _context.Services
+            .Where(s => s.IsActive)
+            .OrderBy(s => s.Name)
+            .ToListAsync();
 
-        if (service is null)
+        if (!activeServices.Any())
         {
-            return NotFound();
+            TempData["Success"] = "Brak aktywnych usług do rezerwacji.";
+            return RedirectToAction("Index", "Services");
         }
+
+        var selectedServiceId = serviceId.HasValue && activeServices.Any(s => s.Id == serviceId.Value)
+            ? serviceId.Value
+            : activeServices.First().Id;
 
         var model = new ReservationCreateViewModel
         {
-            ServiceId = service.Id,
-            ServiceName = service.Name,
-            Price = service.Price,
-            DurationMinutes = service.DurationMinutes,
-            SlotOptions = await BuildSlotOptionsAsync(service.Id)
+            ServiceId = selectedServiceId,
+            ServiceOptions = await BuildServiceOptionsAsync(selectedServiceId)
         };
 
         return View(model);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAvailableSlots(int serviceId, int? selectedSlotId = null)
+    {
+        var serviceExists = await _context.Services.AnyAsync(s => s.Id == serviceId && s.IsActive);
+
+        if (!serviceExists)
+        {
+            return Json(new List<object>());
+        }
+
+        var slots = await _context.AvailableSlots
+            .Where(s =>
+                s.ServiceId == serviceId &&
+                s.StartTime > DateTime.Now &&
+                (!s.IsBooked || s.Id == selectedSlotId))
+            .OrderBy(s => s.StartTime)
+            .Select(s => new
+            {
+                id = s.Id,
+                text = $"{s.StartTime:dd.MM.yyyy HH:mm} - {s.EndTime:HH:mm}"
+            })
+            .ToListAsync();
+
+        return Json(slots);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(ReservationCreateViewModel model)
     {
-        var service = await _context.Services
-            .FirstOrDefaultAsync(s => s.Id == model.ServiceId && s.IsActive);
-
-        if (service is null)
+        if (!model.ServiceId.HasValue)
         {
-            return NotFound();
+            ModelState.AddModelError(nameof(model.ServiceId), "Wybierz usługę.");
         }
 
-        var slot = await _context.AvailableSlots
-            .FirstOrDefaultAsync(s =>
-                s.Id == model.AvailableSlotId &&
-                s.ServiceId == model.ServiceId &&
-                !s.IsBooked &&
-                s.StartTime > DateTime.Now);
-
-        if (slot is null)
+        if (!model.AvailableSlotId.HasValue)
         {
-            ModelState.AddModelError(nameof(model.AvailableSlotId), "Wybrany termin nie jest już dostępny.");
+            ModelState.AddModelError(nameof(model.AvailableSlotId), "Wybierz termin.");
+        }
+
+        Service? service = null;
+
+        if (model.ServiceId.HasValue)
+        {
+            service = await _context.Services
+                .FirstOrDefaultAsync(s => s.Id == model.ServiceId.Value && s.IsActive);
+
+            if (service is null)
+            {
+                ModelState.AddModelError(nameof(model.ServiceId), "Wybrana usługa nie istnieje.");
+            }
+        }
+
+        AvailableSlot? slot = null;
+
+        if (model.ServiceId.HasValue && model.AvailableSlotId.HasValue)
+        {
+            slot = await _context.AvailableSlots
+                .FirstOrDefaultAsync(s =>
+                    s.Id == model.AvailableSlotId.Value &&
+                    s.ServiceId == model.ServiceId.Value &&
+                    !s.IsBooked &&
+                    s.StartTime > DateTime.Now);
+
+            if (slot is null)
+            {
+                ModelState.AddModelError(nameof(model.AvailableSlotId), "Wybrany termin nie jest już dostępny.");
+            }
         }
 
         if (!ModelState.IsValid)
         {
-            model.ServiceName = service.Name;
-            model.Price = service.Price;
-            model.DurationMinutes = service.DurationMinutes;
-            model.SlotOptions = await BuildSlotOptionsAsync(service.Id);
+            model.ServiceOptions = await BuildServiceOptionsAsync(model.ServiceId);
             return View(model);
         }
 
@@ -84,7 +131,7 @@ public class ReservationsController : Controller
             Status = ReservationStatus.Pending,
             Notes = model.Notes,
             UserId = _userManager.GetUserId(User)!,
-            ServiceId = service.Id,
+            ServiceId = service!.Id,
             AvailableSlotId = slot.Id
         };
 
@@ -117,24 +164,6 @@ public class ReservationsController : Controller
             .ToListAsync();
 
         return View(reservations);
-    }
-
-    private async Task<List<SelectListItem>> BuildSlotOptionsAsync(int serviceId, int? selectedSlotId = null)
-    {
-        var slots = await _context.AvailableSlots
-            .Where(s =>
-                s.ServiceId == serviceId &&
-                s.StartTime > DateTime.Now &&
-                (!s.IsBooked || s.Id == selectedSlotId))
-            .OrderBy(s => s.StartTime)
-            .ToListAsync();
-
-        return slots.Select(s => new SelectListItem
-        {
-            Value = s.Id.ToString(),
-            Text = $"{s.StartTime:dd.MM.yyyy HH:mm} - {s.EndTime:HH:mm}",
-            Selected = s.Id == selectedSlotId
-        }).ToList();
     }
 
     public async Task<IActionResult> Edit(int id)
@@ -274,5 +303,38 @@ public class ReservationsController : Controller
             .ToListAsync();
 
         return Json(events);
+    }
+
+    private async Task<List<SelectListItem>> BuildServiceOptionsAsync(int? selectedServiceId = null)
+    {
+        var services = await _context.Services
+            .Where(s => s.IsActive)
+            .OrderBy(s => s.Name)
+            .ToListAsync();
+
+        return services.Select(s => new SelectListItem
+        {
+            Value = s.Id.ToString(),
+            Text = $"{s.Name} - {s.Price:0.00} zł ({s.DurationMinutes} min)",
+            Selected = selectedServiceId.HasValue && s.Id == selectedServiceId.Value
+        }).ToList();
+    }
+
+    private async Task<List<SelectListItem>> BuildSlotOptionsAsync(int serviceId, int? selectedSlotId = null)
+    {
+        var slots = await _context.AvailableSlots
+            .Where(s =>
+                s.ServiceId == serviceId &&
+                s.StartTime > DateTime.Now &&
+                (!s.IsBooked || s.Id == selectedSlotId))
+            .OrderBy(s => s.StartTime)
+            .ToListAsync();
+
+        return slots.Select(s => new SelectListItem
+        {
+            Value = s.Id.ToString(),
+            Text = $"{s.StartTime:dd.MM.yyyy HH:mm} - {s.EndTime:HH:mm}",
+            Selected = selectedSlotId.HasValue && s.Id == selectedSlotId.Value
+        }).ToList();
     }
 }

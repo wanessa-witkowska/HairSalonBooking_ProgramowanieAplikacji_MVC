@@ -190,3 +190,114 @@ body {
         .identity-links a:hover {
             text-decoration: underline;
         }
+
+.admin-page {
+    min-height: calc(100vh - 160px);
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+    .admin-header h1 {
+        margin-bottom: 0.4rem;
+        color: var(--color-primary);
+        font-weight: 700;
+    }
+
+    .admin-header p {
+        margin-bottom: 0;
+        color: var(--color-muted);
+    }
+
+.admin-card {
+    border-radius: 1.25rem;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.admin-action-btn {
+    border-radius: 0.9rem;
+    min-height: 46px;
+    padding: 0.7rem 1.2rem;
+    font-weight: 600;
+}
+
+.admin-table thead {
+    background: rgba(139, 94, 131, 0.08);
+}
+
+.admin-table th {
+    color: var(--color-text);
+    font-weight: 700;
+    border-bottom: none;
+    padding: 1rem;
+}
+
+.admin-table td {
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+.admin-table tbody tr:hover {
+    background: rgba(139, 94, 131, 0.04);
+}
+
+.admin-form-wrapper {
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+.admin-input {
+    min-height: 48px;
+    border-radius: 0.9rem;
+    border: 1px solid #d8c8d3;
+    padding: 0.75rem 1rem;
+}
+
+    .admin-input:focus {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 0.2rem rgba(139, 94, 131, 0.15);
+    }
+
+.admin-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.admin-detail-item {
+    background: #faf7f2;
+    border-radius: 1rem;
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.admin-detail-label {
+    font-size: 0.9rem;
+    color: var(--color-muted);
+    font-weight: 600;
+}
+
+.admin-detail-value {
+    font-size: 1rem;
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .admin-details-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-header {
+        align-items: flex-start;
+    }
+}

@@ -1,53 +1,61 @@
 @model IEnumerable<HairSalonBooking.Models.AvailableSlot>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Zarządzanie terminami";
 }
 
-<h1>Index</h1>
+<div class="container py-4 admin-page">
+    <div class="admin-header mb-4">
+        <div>
+            <h1>Zarządzanie terminami</h1>
+            <p>Dodawaj, edytuj i usuwaj dostępne terminy rezerwacji.</p>
+        </div>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.StartTime)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.EndTime)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.IsBooked)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Service)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.StartTime)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.EndTime)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.IsBooked)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Service.Category)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+        <a asp-action="Create" class="btn btn-primary admin-action-btn">Dodaj termin</a>
+    </div>
+
+    <div class="card admin-card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table admin-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Początek</th>
+                            <th>Koniec</th>
+                            <th>Status</th>
+                            <th>Usługa</th>
+                            <th class="text-end">Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@item.StartTime.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td>@item.EndTime.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td>
+                                    @if (item.IsBooked)
+                                    {
+                                        <span class="badge rounded-pill bg-danger">Zajęty</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge rounded-pill bg-success">Wolny</span>
+                                    }
+                                </td>
+                                <td>@item.Service?.Name</td>
+                                <td class="text-end">
+                                    <div class="d-flex justify-content-end gap-2 flex-wrap">
+                                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edytuj</a>
+                                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Szczegóły</a>
+                                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Usuń</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

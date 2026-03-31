@@ -8,22 +8,37 @@
     <div class="card shadow-sm">
         <div class="card-body">
             <h1 class="mb-3">Rezerwacja usługi</h1>
+            <p class="text-muted">
+                Wybierz usługę, a lista wolnych terminów załaduje się automatycznie bez przeładowania strony.
+            </p>
 
-            <p><strong>Usługa:</strong> @Model.ServiceName</p>
-            <p><strong>Cena:</strong> @Model.Price.ToString("0.00") zł</p>
-            <p><strong>Czas:</strong> @Model.DurationMinutes min</p>
-
-            <form asp-action="Create" method="post">
-                <input asp-for="ServiceId" type="hidden" />
-
+            <form asp-action="Create" method="post" id="reservationForm">
                 <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
                 <div class="mb-3">
-                    <label asp-for="AvailableSlotId" class="form-label"></label>
-                    <select asp-for="AvailableSlotId" asp-items="Model.SlotOptions" class="form-select">
-                        <option value="">-- wybierz termin --</option>
+                    <label asp-for="ServiceId" class="form-label"></label>
+                    <select asp-for="ServiceId" asp-items="Model.ServiceOptions" class="form-select" id="serviceSelect">
+                        <option value="">-- wybierz usługę --</option>
+                    </select>
+                    <span asp-validation-for="ServiceId" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label asp-for="AvailableSlotId" class="form-label mb-0"></label>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshSlotsButton">
+                            Odśwież terminy
+                        </button>
+                    </div>
+
+                    <select asp-for="AvailableSlotId" class="form-select" id="slotSelect" data-selected-slot="@Model.AvailableSlotId">
+                        <option value="">-- najpierw wybierz usługę --</option>
                     </select>
                     <span asp-validation-for="AvailableSlotId" class="text-danger"></span>
+
+                    <div id="slotHelpText" class="form-text">
+                        Dostępne terminy są pobierane dynamicznie.
+                    </div>
                 </div>
 
                 <div class="mb-3">
@@ -33,7 +48,7 @@
                 </div>
 
                 <button type="submit" class="btn btn-success">Zarezerwuj</button>
-                <a asp-controller="Services" asp-action="Details" asp-route-id="@Model.ServiceId" class="btn btn-outline-secondary">Powrót</a>
+                <a asp-controller="Services" asp-action="Index" class="btn btn-outline-secondary">Powrót</a>
             </form>
         </div>
     </div>
@@ -41,4 +56,94 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const serviceSelect = document.getElementById("serviceSelect");
+            const slotSelect = document.getElementById("slotSelect");
+            const refreshButton = document.getElementById("refreshSlotsButton");
+            const helpText = document.getElementById("slotHelpText");
+            const endpointBase = '@Url.Action("GetAvailableSlots", "Reservations")';
+
+            async function loadSlots(selectedSlotId = null) {
+                const serviceId = serviceSelect.value;
+
+                slotSelect.innerHTML = "";
+                slotSelect.disabled = true;
+
+                if (!serviceId) {
+                    slotSelect.innerHTML = '<option value="">-- najpierw wybierz usługę --</option>';
+                    helpText.textContent = "Najpierw wybierz usługę.";
+                    return;
+                }
+
+                slotSelect.innerHTML = '<option value="">Ładowanie terminów...</option>';
+                helpText.textContent = "Pobieranie dostępnych terminów...";
+
+                try {
+                    let url = `${endpointBase}?serviceId=${serviceId}`;
+
+                    if (selectedSlotId) {
+                        url += `&selectedSlotId=${selectedSlotId}`;
+                    }
+
+                    const response = await fetch(url, {
+                        headers: {
+                            "X-Requested-With": "XMLHttpRequest"
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error("Nie udało się pobrać terminów.");
+                    }
+
+                    const slots = await response.json();
+
+                    slotSelect.innerHTML = "";
+
+                    const defaultOption = document.createElement("option");
+                    defaultOption.value = "";
+                    defaultOption.textContent = "-- wybierz termin --";
+                    slotSelect.appendChild(defaultOption);
+
+                    if (!slots.length) {
+                        helpText.textContent = "Brak wolnych terminów dla wybranej usługi.";
+                        slotSelect.disabled = true;
+                        return;
+                    }
+
+                    slots.forEach(slot => {
+                        const option = document.createElement("option");
+                        option.value = slot.id;
+                        option.textContent = slot.text;
+
+                        if (selectedSlotId && String(slot.id) === String(selectedSlotId)) {
+                            option.selected = true;
+                        }
+
+                        slotSelect.appendChild(option);
+                    });
+
+                    slotSelect.disabled = false;
+                    helpText.textContent = "Lista terminów została odświeżona bez przeładowania strony.";
+                } catch (error) {
+                    slotSelect.innerHTML = '<option value="">-- błąd ładowania terminów --</option>';
+                    slotSelect.disabled = true;
+                    helpText.textContent = "Nie udało się pobrać terminów. Spróbuj ponownie.";
+                    console.error(error);
+                }
+            }
+
+            serviceSelect.addEventListener("change", function () {
+                loadSlots();
+            });
+
+            refreshButton.addEventListener("click", function () {
+                loadSlots(slotSelect.value || null);
+            });
+
+            const selectedSlotId = slotSelect.dataset.selectedSlot;
+            loadSlots(selectedSlotId || null);
+        });
+    </script>
 }
