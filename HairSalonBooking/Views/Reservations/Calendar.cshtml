@@ -1,16 +1,96 @@
-﻿@{
+﻿@using Microsoft.AspNetCore.Mvc.Rendering
+@{
     ViewData["Title"] = "Kalendarz rezerwacji";
+    var serviceOptions = ViewBag.ServiceOptions as List<SelectListItem> ?? new();
 }
 
 <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Kalendarz rezerwacji</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h1 class="mb-1">Kalendarz rezerwacji</h1>
+            <p class="text-muted mb-0">Na kalendarzu widoczne są tylko zajęte terminy. Kliknij dzień, aby utworzyć rezerwację.</p>
+        </div>
+
         <a asp-action="MyReservations" class="btn btn-outline-secondary">Powrót</a>
     </div>
 
-    <div class="card shadow-sm">
+    @if (TempData["CalendarError"] is string errorMessage)
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    @if (TempData["Success"] is string successMessage)
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+
+    <div class="calendar-legend mb-3">
+        <span class="legend-item">
+            <span class="legend-dot legend-booked"></span>
+            Termin zajęty
+        </span>
+        <span class="legend-note">
+            Kliknij wybrany dzień, aby otworzyć okno rezerwacji.
+        </span>
+    </div>
+
+    <div class="card shadow-sm calendar-card">
         <div class="card-body">
             <div id="calendar"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="calendarBookingModal" tabindex="-1" aria-labelledby="calendarBookingModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content calendar-modal">
+            <div class="modal-header">
+                <h5 class="modal-title" id="calendarBookingModalLabel">Nowa rezerwacja</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zamknij"></button>
+            </div>
+
+            <form asp-action="CreateFromCalendar" method="post" id="calendarBookingForm">
+                @Html.AntiForgeryToken()
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Wybrany dzień</label>
+                        <div id="selectedDateDisplay" class="calendar-selected-date">-</div>
+                        <input type="hidden" id="selectedDateInput" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="calendarServiceSelect" class="form-label">Usługa</label>
+                        <select id="calendarServiceSelect" name="serviceId" class="form-select admin-input">
+                            <option value="">-- wybierz usługę --</option>
+                            @foreach (var service in serviceOptions)
+                            {
+                                <option value="@service.Value">@service.Text</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="calendarSlotSelect" class="form-label">Dostępne godziny</label>
+                        <select id="calendarSlotSelect" name="availableSlotId" class="form-select admin-input" disabled>
+                            <option value="">-- najpierw wybierz usługę --</option>
+                        </select>
+                        <div id="calendarSlotHelp" class="form-text">
+                            Po wyborze usługi pokażą się wolne godziny dla wybranego dnia.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="calendarNotes" class="form-label">Uwagi</label>
+                        <textarea id="calendarNotes" name="notes" class="form-control admin-input" rows="4"></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="submit" class="btn btn-primary admin-action-btn">Zarezerwuj</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -19,13 +99,132 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.20/index.global.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-        var calendarEl = document.getElementById('calendar');
+        const calendarEl = document.getElementById('calendar');
+        const modalEl = document.getElementById('calendarBookingModal');
+        const bookingModal = new bootstrap.Modal(modalEl);
 
-        var calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
+        const serviceSelect = document.getElementById('calendarServiceSelect');
+        const slotSelect = document.getElementById('calendarSlotSelect');
+        const selectedDateInput = document.getElementById('selectedDateInput');
+        const selectedDateDisplay = document.getElementById('selectedDateDisplay');
+        const slotHelp = document.getElementById('calendarSlotHelp');
+        const notesInput = document.getElementById('calendarNotes');
+
+        const slotEndpoint = '@Url.Action("GetAvailableSlotsForDay", "Reservations")';
+
+        function formatPolishDate(dateStr) {
+        const date = new Date(dateStr + 'T00:00:00');
+        return date.toLocaleDateString('pl-PL', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+        });
+        }
+
+        function resetModalFields() {
+        serviceSelect.value = '';
+        slotSelect.innerHTML = '<option value="">-- najpierw wybierz usługę --</option>';
+        slotSelect.disabled = true;
+        notesInput.value = '';
+        slotHelp.textContent = 'Po wyborze usługi pokażą się wolne godziny dla wybranego dnia.';
+        }
+
+        async function loadSlotsForDay() {
+        const serviceId = serviceSelect.value;
+        const selectedDate = selectedDateInput.value;
+
+        slotSelect.innerHTML = '';
+        slotSelect.disabled = true;
+
+        if (!serviceId || !selectedDate) {
+        slotSelect.innerHTML = '<option value="">-- najpierw wybierz usługę --</option>';
+        slotHelp.textContent = 'Najpierw wybierz usługę.';
+        return;
+        }
+
+        slotSelect.innerHTML = '<option value="">Ładowanie godzin...</option>';
+        slotHelp.textContent = 'Pobieranie wolnych godzin...';
+
+        try {
+        const url = `${slotEndpoint}?serviceId=${serviceId}&date=${selectedDate}`;
+        const response = await fetch(url, {
+        headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+        }
+        });
+
+        if (!response.ok) {
+        throw new Error('Błąd pobierania godzin.');
+        }
+
+        const slots = await response.json();
+
+        slotSelect.innerHTML = '';
+
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '-- wybierz godzinę --';
+        slotSelect.appendChild(defaultOption);
+
+        if (!slots.length) {
+        slotSelect.disabled = true;
+        slotHelp.textContent = 'Brak wolnych godzin dla tej usługi w wybranym dniu.';
+        return;
+        }
+
+        slots.forEach(slot => {
+        const option = document.createElement('option');
+        option.value = slot.id;
+        option.textContent = slot.text;
+        slotSelect.appendChild(option);
+        });
+
+        slotSelect.disabled = false;
+        slotHelp.textContent = 'Wybierz jedną z dostępnych godzin.';
+        } catch (error) {
+        slotSelect.innerHTML = '<option value="">-- błąd ładowania godzin --</option>';
+        slotSelect.disabled = true;
+        slotHelp.textContent = 'Nie udało się pobrać godzin. Spróbuj ponownie.';
+        console.error(error);
+        }
+        }
+
+        serviceSelect.addEventListener('change', loadSlotsForDay);
+
+        const calendar = new FullCalendar.Calendar(calendarEl, {
         locale: 'pl',
-        height: 700,
-        events: '/Reservations/Events'
+        initialView: 'dayGridMonth',
+        firstDay: 1,
+        height: 'auto',
+        dayMaxEvents: 3,
+        moreLinkText: 'więcej',
+        headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,listWeek'
+        },
+        buttonText: {
+        today: 'Dziś',
+        month: 'Miesiąc',
+        list: 'Lista'
+        },
+        events: '/Reservations/Events',
+        dateClick: function (info) {
+        const clickedDate = new Date(info.dateStr + 'T00:00:00');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (clickedDate < today) {
+        return;
+        }
+
+        selectedDateInput.value = info.dateStr;
+        selectedDateDisplay.textContent = formatPolishDate(info.dateStr);
+
+        resetModalFields();
+        bookingModal.show();
+        }
         });
 
         calendar.render();

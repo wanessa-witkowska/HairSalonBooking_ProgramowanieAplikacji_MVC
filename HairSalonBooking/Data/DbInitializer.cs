@@ -63,36 +63,49 @@ public static class DbInitializer
 
         if (!await context.AvailableSlots.AnyAsync())
         {
-            var services = await context.Services.ToListAsync();
-            var slots = new List<AvailableSlot>();
-            var baseDate = DateTime.Today.AddDays(1);
+            await SeedSlotsByDurationAsync(context);
+        }
+    }
 
-            foreach (var service in services)
+    private static async Task SeedSlotsByDurationAsync(ApplicationDbContext context)
+    {
+        var services = await context.Services
+            .Where(s => s.IsActive)
+            .ToListAsync();
+
+        var slots = new List<AvailableSlot>();
+
+        var startDate = DateTime.Today;
+        const int daysToGenerate = 30;
+        const int openingHour = 9;
+        const int closingHour = 21;
+
+        foreach (var service in services)
+        {
+            for (int day = 0; day < daysToGenerate; day++)
             {
-                for (int day = 0; day < 7; day++)
+                var currentDate = startDate.AddDays(day);
+                var dayStart = currentDate.AddHours(openingHour);
+                var dayEnd = currentDate.AddHours(closingHour);
+
+                var currentStart = dayStart;
+
+                while (currentStart.AddMinutes(service.DurationMinutes) <= dayEnd)
                 {
-                    var currentDay = baseDate.AddDays(day);
-
-                    var hours = new[] { 9, 11, 13, 15, 17 };
-
-                    foreach (var hour in hours)
+                    slots.Add(new AvailableSlot
                     {
-                        var start = new DateTime(currentDay.Year, currentDay.Month, currentDay.Day, hour, 0, 0);
-                        var end = start.AddMinutes(service.DurationMinutes);
+                        ServiceId = service.Id,
+                        StartTime = currentStart,
+                        EndTime = currentStart.AddMinutes(service.DurationMinutes),
+                        IsBooked = false
+                    });
 
-                        slots.Add(new AvailableSlot
-                        {
-                            ServiceId = service.Id,
-                            StartTime = start,
-                            EndTime = end,
-                            IsBooked = false
-                        });
-                    }
+                    currentStart = currentStart.AddMinutes(service.DurationMinutes);
                 }
             }
-
-            context.AvailableSlots.AddRange(slots);
-            await context.SaveChangesAsync();
         }
+
+        context.AvailableSlots.AddRange(slots);
+        await context.SaveChangesAsync();
     }
 }

@@ -50,27 +50,45 @@ public class ReservationsController : Controller
     [HttpGet]
     public async Task<IActionResult> GetAvailableSlots(int serviceId, int? selectedSlotId = null)
     {
-        var serviceExists = await _context.Services.AnyAsync(s => s.Id == serviceId && s.IsActive);
+        var serviceExists = await _context.Services
+            .AnyAsync(s => s.Id == serviceId && s.IsActive);
 
         if (!serviceExists)
         {
             return Json(new List<object>());
         }
 
-        var slots = await _context.AvailableSlots
+        var candidateSlots = await _context.AvailableSlots
             .Where(s =>
                 s.ServiceId == serviceId &&
                 s.StartTime > DateTime.Now &&
                 (!s.IsBooked || s.Id == selectedSlotId))
             .OrderBy(s => s.StartTime)
-            .Select(s => new
-            {
-                id = s.Id,
-                text = $"{s.StartTime:dd.MM.yyyy HH:mm} - {s.EndTime:HH:mm}"
-            })
             .ToListAsync();
 
-        return Json(slots);
+        if (!candidateSlots.Any())
+        {
+            return Json(new List<object>());
+        }
+
+        var rangeStart = candidateSlots.Min(s => s.StartTime);
+        var rangeEnd = candidateSlots.Max(s => s.EndTime);
+
+        var blockedRanges = await GetBlockedRangesAsync(rangeStart, rangeEnd);
+
+        var availableSlots = candidateSlots
+            .Where(slot =>
+                selectedSlotId.HasValue && slot.Id == selectedSlotId.Value
+                || !blockedRanges.Any(block =>
+                    Overlaps(slot.StartTime, slot.EndTime, block.Start, block.End)))
+            .Select(slot => new
+            {
+                id = slot.Id,
+                text = $"{slot.StartTime:dd.MM.yyyy HH:mm} - {slot.EndTime:HH:mm}"
+            })
+            .ToList();
+
+        return Json(availableSlots);
     }
 
     [HttpPost]
@@ -114,6 +132,16 @@ public class ReservationsController : Controller
             if (slot is null)
             {
                 ModelState.AddModelError(nameof(model.AvailableSlotId), "Wybrany termin nie jest już dostępny.");
+            }
+            else
+            {
+                var hasConflict = await HasConflictingReservationAsync(slot.StartTime, slot.EndTime);
+
+                if (hasConflict)
+                {
+                    ModelState.AddModelError(nameof(model.AvailableSlotId),
+                        "W wybranych godzinach istnieje już aktywna rezerwacja dla innej usługi.");
+                }
             }
         }
 
@@ -192,7 +220,7 @@ public class ReservationsController : Controller
             ServiceName = reservation.Service.Name,
             AvailableSlotId = reservation.AvailableSlotId,
             Notes = reservation.Notes,
-            SlotOptions = await BuildSlotOptionsAsync(reservation.ServiceId, reservation.AvailableSlotId)
+            SlotOptions = await BuildSlotOptionsAsync(reservation.ServiceId, reservation.AvailableSlotId, reservation.Id)
         };
 
         return View(model);
@@ -220,21 +248,34 @@ public class ReservationsController : Controller
         }
 
         var selectedSlot = await _context.AvailableSlots
-            .FirstOrDefaultAsync(s =>
-                s.Id == model.AvailableSlotId &&
-                s.ServiceId == reservation.ServiceId &&
-                (!s.IsBooked || s.Id == reservation.AvailableSlotId) &&
-                s.StartTime > DateTime.Now);
+         .FirstOrDefaultAsync(s =>
+        s.Id == model.AvailableSlotId &&
+        s.ServiceId == reservation.ServiceId &&
+        (!s.IsBooked || s.Id == reservation.AvailableSlotId) &&
+        s.StartTime > DateTime.Now);
 
         if (selectedSlot is null)
         {
             ModelState.AddModelError(nameof(model.AvailableSlotId), "Wybrany termin nie jest dostępny.");
         }
+        else
+        {
+            var hasConflict = await HasConflictingReservationAsync(
+                selectedSlot.StartTime,
+                selectedSlot.EndTime,
+                reservation.Id);
+
+            if (hasConflict)
+            {
+                ModelState.AddModelError(nameof(model.AvailableSlotId),
+                    "W wybranych godzinach istnieje już aktywna rezerwacja dla innej usługi.");
+            }
+        }
 
         if (!ModelState.IsValid)
         {
             model.ServiceName = reservation.Service.Name;
-            model.SlotOptions = await BuildSlotOptionsAsync(reservation.ServiceId, reservation.AvailableSlotId);
+            model.SlotOptions = await BuildSlotOptionsAsync(reservation.ServiceId, reservation.AvailableSlotId, reservation.Id);
             return View(model);
         }
 
@@ -283,8 +324,9 @@ public class ReservationsController : Controller
         return RedirectToAction(nameof(MyReservations));
     }
 
-    public IActionResult Calendar()
+    public async Task<IActionResult> Calendar()
     {
+        ViewBag.ServiceOptions = await BuildServiceOptionsAsync();
         return View();
     }
 
@@ -292,17 +334,121 @@ public class ReservationsController : Controller
     {
         var events = await _context.AvailableSlots
             .Include(s => s.Service)
-            .Where(s => s.StartTime >= start && s.EndTime <= end)
+            .Where(s =>
+                s.IsBooked &&
+                s.StartTime >= start &&
+                s.EndTime <= end)
+            .OrderBy(s => s.StartTime)
             .Select(s => new
             {
-                title = s.Service.Name + (s.IsBooked ? " (zajęty)" : " (wolny)"),
+                title = $"{s.StartTime:HH:mm} {s.Service.Name}",
                 start = s.StartTime,
                 end = s.EndTime,
-                className = s.IsBooked ? "calendar-booked" : "calendar-free"
+                className = "calendar-booked-only"
             })
             .ToListAsync();
 
         return Json(events);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAvailableSlotsForDay(int serviceId, DateTime date)
+    {
+        var dayStart = date.Date.AddHours(9);
+        var dayEnd = date.Date.AddHours(21);
+
+        var minStart = date.Date == DateTime.Today
+            ? DateTime.Now
+            : dayStart;
+
+        var serviceExists = await _context.Services
+            .AnyAsync(s => s.Id == serviceId && s.IsActive);
+
+        if (!serviceExists)
+        {
+            return Json(new List<object>());
+        }
+
+        var candidateSlots = await _context.AvailableSlots
+            .Where(s =>
+                s.ServiceId == serviceId &&
+                !s.IsBooked &&
+                s.StartTime >= minStart &&
+                s.EndTime <= dayEnd)
+            .OrderBy(s => s.StartTime)
+            .ToListAsync();
+
+        if (!candidateSlots.Any())
+        {
+            return Json(new List<object>());
+        }
+
+        var blockedRanges = await GetBlockedRangesAsync(dayStart, dayEnd);
+
+        var availableSlots = candidateSlots
+            .Where(slot => !blockedRanges.Any(block =>
+                Overlaps(slot.StartTime, slot.EndTime, block.Start, block.End)))
+            .Select(slot => new
+            {
+                id = slot.Id,
+                text = $"{slot.StartTime:HH:mm} - {slot.EndTime:HH:mm}"
+            })
+            .ToList();
+
+        return Json(availableSlots);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateFromCalendar(int serviceId, int availableSlotId, string? notes)
+    {
+        var service = await _context.Services
+            .FirstOrDefaultAsync(s => s.Id == serviceId && s.IsActive);
+
+        if (service is null)
+        {
+            TempData["CalendarError"] = "Wybrana usługa nie istnieje.";
+            return RedirectToAction(nameof(Calendar));
+        }
+
+        var slot = await _context.AvailableSlots
+            .FirstOrDefaultAsync(s =>
+                s.Id == availableSlotId &&
+                s.ServiceId == serviceId &&
+                !s.IsBooked &&
+                s.StartTime > DateTime.Now);
+
+        if (slot is null)
+        {
+            TempData["CalendarError"] = "Wybrany termin nie jest już dostępny.";
+            return RedirectToAction(nameof(Calendar));
+        }
+
+        var hasConflict = await HasConflictingReservationAsync(slot.StartTime, slot.EndTime);
+
+        if (hasConflict)
+        {
+            TempData["CalendarError"] = "W wybranych godzinach istnieje już aktywna rezerwacja dla innej usługi.";
+            return RedirectToAction(nameof(Calendar));
+        }
+
+        slot.IsBooked = true;
+
+        var reservation = new Reservation
+        {
+            ReservationDate = slot.StartTime,
+            Status = ReservationStatus.Pending,
+            Notes = notes,
+            UserId = _userManager.GetUserId(User)!,
+            ServiceId = service.Id,
+            AvailableSlotId = slot.Id
+        };
+
+        _context.Reservations.Add(reservation);
+        await _context.SaveChangesAsync();
+
+        TempData["Success"] = "Rezerwacja została utworzona i oczekuje na zatwierdzenie.";
+        return RedirectToAction(nameof(MyReservations));
     }
 
     private async Task<List<SelectListItem>> BuildServiceOptionsAsync(int? selectedServiceId = null)
@@ -320,7 +466,10 @@ public class ReservationsController : Controller
         }).ToList();
     }
 
-    private async Task<List<SelectListItem>> BuildSlotOptionsAsync(int serviceId, int? selectedSlotId = null)
+    private async Task<List<SelectListItem>> BuildSlotOptionsAsync(
+    int serviceId,
+    int? selectedSlotId = null,
+    int? excludeReservationId = null)
     {
         var slots = await _context.AvailableSlots
             .Where(s =>
@@ -330,11 +479,73 @@ public class ReservationsController : Controller
             .OrderBy(s => s.StartTime)
             .ToListAsync();
 
-        return slots.Select(s => new SelectListItem
+        if (!slots.Any())
+        {
+            return new List<SelectListItem>();
+        }
+
+        var rangeStart = slots.Min(s => s.StartTime);
+        var rangeEnd = slots.Max(s => s.EndTime);
+
+        var blockedRanges = await GetBlockedRangesAsync(rangeStart, rangeEnd, excludeReservationId);
+
+        var filteredSlots = slots
+            .Where(slot =>
+                selectedSlotId.HasValue && slot.Id == selectedSlotId.Value
+                || !blockedRanges.Any(block =>
+                    Overlaps(slot.StartTime, slot.EndTime, block.Start, block.End)))
+            .ToList();
+
+        return filteredSlots.Select(s => new SelectListItem
         {
             Value = s.Id.ToString(),
             Text = $"{s.StartTime:dd.MM.yyyy HH:mm} - {s.EndTime:HH:mm}",
             Selected = selectedSlotId.HasValue && s.Id == selectedSlotId.Value
         }).ToList();
+    }
+
+    private static bool Overlaps(DateTime startA, DateTime endA, DateTime startB, DateTime endB)
+    {
+        return startA < endB && endA > startB;
+    }
+
+    private async Task<List<(DateTime Start, DateTime End)>> GetBlockedRangesAsync(
+        DateTime rangeStart,
+        DateTime rangeEnd,
+        int? excludeReservationId = null)
+    {
+        var query = _context.Reservations
+            .Include(r => r.AvailableSlot)
+            .Where(r =>
+                (r.Status == ReservationStatus.Pending || r.Status == ReservationStatus.Approved) &&
+                r.ReservationDate < rangeEnd &&
+                r.AvailableSlot.EndTime > rangeStart);
+
+        if (excludeReservationId.HasValue)
+        {
+            query = query.Where(r => r.Id != excludeReservationId.Value);
+        }
+
+        var reservations = await query
+            .Select(r => new
+            {
+                Start = r.ReservationDate,
+                End = r.AvailableSlot.EndTime
+            })
+            .ToListAsync();
+
+        return reservations
+            .Select(r => (r.Start, r.End))
+            .ToList();
+    }
+
+    private async Task<bool> HasConflictingReservationAsync(
+        DateTime slotStart,
+        DateTime slotEnd,
+        int? excludeReservationId = null)
+    {
+        var blockedRanges = await GetBlockedRangesAsync(slotStart, slotEnd, excludeReservationId);
+
+        return blockedRanges.Any(r => Overlaps(slotStart, slotEnd, r.Start, r.End));
     }
 }
