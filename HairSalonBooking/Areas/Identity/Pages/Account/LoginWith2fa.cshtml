@@ -1,0 +1,42 @@
+@page
+@model LoginWith2faModel
+@{
+    ViewData["Title"] = "Weryfikacja dwuetapowa";
+}
+
+<div class="identity-page">
+    <div class="identity-card shadow-lg">
+        <div class="identity-header">
+            <h1>Weryfikacja dwuetapowa</h1>
+            <p>Wpisz kod z aplikacji uwierzytelniającej, aby dokończyć logowanie.</p>
+        </div>
+
+        <form method="post" asp-route-returnUrl="@Model.ReturnUrl" asp-route-rememberMe="@Model.RememberMe">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="mb-3">
+                <label asp-for="Input.TwoFactorCode" class="form-label">Kod uwierzytelniający</label>
+                <input asp-for="Input.TwoFactorCode" class="form-control identity-input" autocomplete="one-time-code" />
+                <span asp-validation-for="Input.TwoFactorCode" class="text-danger"></span>
+            </div>
+
+            <div class="form-check mb-4">
+                <input asp-for="Input.RememberMachine" class="form-check-input" />
+                <label asp-for="Input.RememberMachine" class="form-check-label">Zapamiętaj to urządzenie</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 identity-btn">
+                Potwierdź logowanie
+            </button>
+
+            <div class="identity-links mt-4">
+                <a asp-page="./LoginWithRecoveryCode" asp-route-returnUrl="@Model.ReturnUrl">Użyj kodu odzyskiwania</a>
+                <a asp-page="./Login">Wróć do logowania</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -55,9 +55,15 @@ namespace HairSalonBooking.Areas.Identity.Pages.Account
             if (ModelState.IsValid)
             {
                 var user = await _userManager.FindByEmailAsync(Input.Email);
-                if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
+                if (user == null)
                 {
                     // Don't reveal that the user does not exist or is not confirmed
+                    return RedirectToPage("./ForgotPasswordConfirmation");
+                }
+
+                if (_userManager.Options.SignIn.RequireConfirmedAccount &&
+                    !(await _userManager.IsEmailConfirmedAsync(user)))
+                {
                     return RedirectToPage("./ForgotPasswordConfirmation");
                 }
 
@@ -73,8 +79,14 @@ namespace HairSalonBooking.Areas.Identity.Pages.Account
 
                 await _emailSender.SendEmailAsync(
                     Input.Email,
-                    "Reset Password",
-                    $"Please reset your password by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                    "Reset hasła w HairSalonBooking",
+                    $"""
+                    <h2>Reset hasła</h2>
+                    <p>Otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta.</p>
+                    <p>Aby ustawić nowe hasło, kliknij poniższy link:</p>
+                    <p><a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>Ustaw nowe hasło</a></p>
+                    <p>Jeśli to nie Ty wysłałaś lub wysłałeś tę prośbę, zignoruj tę wiadomość.</p>
+                    """);
 
                 return RedirectToPage("./ForgotPasswordConfirmation");
             }

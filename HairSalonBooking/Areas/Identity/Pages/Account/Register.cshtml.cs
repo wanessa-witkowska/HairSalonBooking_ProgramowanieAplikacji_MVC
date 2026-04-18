@@ -133,8 +133,13 @@ namespace HairSalonBooking.Areas.Identity.Pages.Account
                         values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
                         protocol: Request.Scheme);
 
-                    await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
-                        $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                    await _emailSender.SendEmailAsync(Input.Email, "Potwierdź adres e-mail w HairSalonBooking",
+                        $"""
+                        <h2>Potwierdzenie adresu e-mail</h2>
+                        <p>Dziękujemy za rejestrację w HairSalonBooking.</p>
+                        <p>Aby potwierdzić konto, kliknij poniższy link:</p>
+                        <p><a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>Potwierdź adres e-mail</a></p>
+                        """);
 
                     if (_userManager.Options.SignIn.RequireConfirmedAccount)
                     {

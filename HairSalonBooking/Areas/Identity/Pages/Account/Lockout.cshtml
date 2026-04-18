@@ -1,0 +1,18 @@
+@page
+@{
+    ViewData["Title"] = "Konto zablokowane";
+}
+
+<div class="identity-page">
+    <div class="identity-card shadow-lg">
+        <div class="identity-header">
+            <h1>Konto zostało tymczasowo zablokowane</h1>
+            <p>W tej chwili logowanie jest niedostępne. Spróbuj ponownie później lub skontaktuj się z administratorem.</p>
+        </div>
+
+        <div class="identity-links">
+            <a asp-page="./Login">Wróć do logowania</a>
+            <a asp-area="" asp-controller="Home" asp-action="Index">Przejdź na stronę główną</a>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,23 @@
+@page
+@model RegisterConfirmationModel
+@{
+    ViewData["Title"] = "Potwierdzenie rejestracji";
+}
+
+<div class="identity-page">
+    <div class="identity-card shadow-lg">
+        <div class="identity-header">
+            <h1>Potwierdzenie rejestracji</h1>
+            <p>Na adres <strong>@Model.Email</strong> wysłaliśmy wiadomość z linkiem aktywacyjnym.</p>
+        </div>
+
+        <div class="alert alert-light border mb-4">
+            W trybie deweloperskim kopia wiadomości trafia również do folderu <code>output/emails</code>.
+        </div>
+
+        <div class="identity-links">
+            <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">Przejdź do logowania</a>
+            <a asp-area="" asp-controller="Home" asp-action="Index">Wróć na stronę główną</a>
+        </div>
+    </div>
+</div>

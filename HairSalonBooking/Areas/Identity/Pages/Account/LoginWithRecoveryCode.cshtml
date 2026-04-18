@@ -1,0 +1,36 @@
+@page
+@model LoginWithRecoveryCodeModel
+@{
+    ViewData["Title"] = "Kod odzyskiwania";
+}
+
+<div class="identity-page">
+    <div class="identity-card shadow-lg">
+        <div class="identity-header">
+            <h1>Logowanie kodem odzyskiwania</h1>
+            <p>Użyj jednorazowego kodu odzyskiwania, jeśli nie masz dostępu do aplikacji 2FA.</p>
+        </div>
+
+        <form method="post" asp-route-returnUrl="@Model.ReturnUrl">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="mb-4">
+                <label asp-for="Input.RecoveryCode" class="form-label">Kod odzyskiwania</label>
+                <input asp-for="Input.RecoveryCode" class="form-control identity-input" autocomplete="off" />
+                <span asp-validation-for="Input.RecoveryCode" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 identity-btn">
+                Zaloguj się
+            </button>
+
+            <div class="identity-links mt-4">
+                <a asp-page="./Login">Wróć do logowania</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

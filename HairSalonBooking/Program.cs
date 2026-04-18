@@ -2,6 +2,7 @@ using HairSalonBooking.Data;
 using HairSalonBooking.Models;
 using HairSalonBooking.Services;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,6 +32,7 @@ builder.Services.AddValidation();
 
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddTransient<IEmailService, EmailService>();
+builder.Services.AddTransient<IEmailSender, IdentityEmailSenderAdapter>();
 
 
 var app = builder.Build();
@@ -65,3 +67,18 @@ app.MapControllerRoute(
 app.MapRazorPages();
 
 app.Run();
+
+file sealed class IdentityEmailSenderAdapter : IEmailSender
+{
+    private readonly IEmailService _emailService;
+
+    public IdentityEmailSenderAdapter(IEmailService emailService)
+    {
+        _emailService = emailService;
+    }
+
+    public Task SendEmailAsync(string email, string subject, string htmlMessage)
+    {
+        return _emailService.SendAsync(email, subject, htmlMessage);
+    }
+}
