@@ -5,6 +5,9 @@
     var bodyClass = Context.Request.Path.StartsWithSegments("/Identity/Account/Manage")
         ? "identity-manage-shell"
         : string.Empty;
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+    var isAdminSection = currentController?.StartsWith("Admin") == true;
 }
 
 <!DOCTYPE html>
@@ -19,36 +22,45 @@
 <body class="@bodyClass">
     <header>
         <nav class="navbar navbar-expand-lg navbar-dark salon-navbar">
-            <div class="container">
-                <a class="navbar-brand fw-bold" asp-controller="Home" asp-action="Index">HairSalonBooking</a>
+            <div class="container salon-navbar__container">
+                <a class="navbar-brand salon-brand" asp-controller="Home" asp-action="Index">
+                    <span class="salon-brand__mark">HS</span>
+                    <span class="salon-brand__text">
+                        <span class="salon-brand__title">HairSalonBooking</span>
+                        <span class="salon-brand__subtitle">Rezerwacje online</span>
+                    </span>
+                </a>
 
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Prze&#322;&#261;cz nawigacj&#281;">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
                 <div class="collapse navbar-collapse" id="mainNav">
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <ul class="navbar-nav salon-nav-links me-auto mb-2 mb-lg-0">
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Home" asp-action="Index">Start</a>
+                            <a class="nav-link @(currentController == "Home" ? "active" : string.Empty)" asp-controller="Home" asp-action="Index">Start</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Services" asp-action="Index">Usługi</a>
+                            <a class="nav-link @(currentController == "Services" ? "active" : string.Empty)" asp-controller="Services" asp-action="Index">Us&#322;ugi</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(currentController == "Reservations" && currentAction == "Calendar" ? "active" : string.Empty)" asp-controller="Reservations" asp-action="Calendar">Kalendarz</a>
                         </li>
 
                         @if (SignInManager.IsSignedIn(User))
                         {
                             <li class="nav-item">
-                                <a class="nav-link" asp-controller="Reservations" asp-action="MyReservations">Moje rezerwacje</a>
+                                <a class="nav-link @(currentController == "Reservations" && currentAction == "MyReservations" ? "active" : string.Empty)" asp-controller="Reservations" asp-action="MyReservations">Moje rezerwacje</a>
                             </li>
                         }
 
                         @if (User.IsInRole("Admin"))
                         {
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Panel admina</a>
-                                <ul class="dropdown-menu">
+                                <a class="nav-link dropdown-toggle @(isAdminSection ? "active" : string.Empty)" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Panel admina</a>
+                                <ul class="dropdown-menu salon-dropdown">
                                     <li><a class="dropdown-item" asp-controller="AdminDashboard" asp-action="Index">Dashboard</a></li>
-                                    <li><a class="dropdown-item" asp-controller="AdminServices" asp-action="Index">Usługi</a></li>
+                                    <li><a class="dropdown-item" asp-controller="AdminServices" asp-action="Index">Us&#322;ugi</a></li>
                                     <li><a class="dropdown-item" asp-controller="AdminSlots" asp-action="Index">Terminy</a></li>
                                     <li><a class="dropdown-item" asp-controller="AdminReservations" asp-action="Index">Rezerwacje</a></li>
                                 </ul>
@@ -56,7 +68,9 @@
                         }
                     </ul>
 
-                    <partial name="_LoginPartial" />
+                    <div class="salon-navbar__actions">
+                        <partial name="_LoginPartial" />
+                    </div>
                 </div>
             </div>
         </nav>
@@ -67,8 +81,11 @@
     </main>
 
     <footer class="salon-footer">
-        <div class="container py-4">
-            <p class="mb-0">HairSalonBooking - Wanessa Witkowska</p>
+        <div class="container">
+            <div class="salon-footer__bottom">
+                <span>HairSalonBooking</span>
+                <span>Wanessa Witkowska</span>
+            </div>
         </div>
     </footer>
 
