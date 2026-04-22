@@ -1,0 +1,129 @@
+@model HairSalonBooking.ViewModels.AdminSlotsBulkCreateViewModel
+
+@{
+    ViewData["Title"] = "Dodaj wiele terminów";
+}
+
+<div class="container py-4 admin-page">
+    <div class="admin-form-wrapper admin-form-wrapper--wide">
+        <div class="card admin-card shadow-sm">
+            <div class="card-body p-4 p-lg-5">
+                <div class="mb-4">
+                    <h1>Dodaj wiele terminów</h1>
+                    <p class="text-muted mb-0">Wygeneruj serię slotów dla jednej usługi w wybranym zakresie dat. Długość pojedynczego slotu wynika z czasu trwania usługi.</p>
+                </div>
+
+                <form asp-action="BulkCreate" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+
+                    <div class="row g-3">
+                        <div class="col-lg-6">
+                            <label asp-for="ServiceId" class="form-label"></label>
+                            <select asp-for="ServiceId" asp-items="Model.ServiceOptions" class="form-select admin-input">
+                                <option value="">Wybierz usługę</option>
+                            </select>
+                            <span asp-validation-for="ServiceId" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6">
+                            <label asp-for="DateFrom" class="form-label"></label>
+                            <input asp-for="DateFrom" type="date" class="form-control admin-input" />
+                            <span asp-validation-for="DateFrom" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6">
+                            <label asp-for="DateTo" class="form-label"></label>
+                            <input asp-for="DateTo" type="date" class="form-control admin-input" />
+                            <span asp-validation-for="DateTo" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-lg-3 col-md-4">
+                            <label asp-for="DayStartTime" class="form-label"></label>
+                            <input asp-for="DayStartTime" type="time" class="form-control admin-input" />
+                            <span asp-validation-for="DayStartTime" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-lg-3 col-md-4">
+                            <label asp-for="DayEndTime" class="form-label"></label>
+                            <input asp-for="DayEndTime" type="time" class="form-control admin-input" />
+                            <span asp-validation-for="DayEndTime" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-lg-3 col-md-4">
+                            <label asp-for="GapMinutes" class="form-label"></label>
+                            <input asp-for="GapMinutes" type="number" min="0" max="240" class="form-control admin-input" />
+                            <span asp-validation-for="GapMinutes" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="admin-bulk-weekdays mt-4">
+                        <span class="admin-bulk-weekdays__label">Dni tygodnia</span>
+                        <div class="admin-bulk-weekdays__grid">
+                            <label class="admin-choice-chip">
+                                <input asp-for="Monday" class="admin-choice-chip__input" />
+                                <span>Pon</span>
+                            </label>
+                            <label class="admin-choice-chip">
+                                <input asp-for="Tuesday" class="admin-choice-chip__input" />
+                                <span>Wt</span>
+                            </label>
+                            <label class="admin-choice-chip">
+                                <input asp-for="Wednesday" class="admin-choice-chip__input" />
+                                <span>Śr</span>
+                            </label>
+                            <label class="admin-choice-chip">
+                                <input asp-for="Thursday" class="admin-choice-chip__input" />
+                                <span>Czw</span>
+                            </label>
+                            <label class="admin-choice-chip">
+                                <input asp-for="Friday" class="admin-choice-chip__input" />
+                                <span>Pt</span>
+                            </label>
+                            <label class="admin-choice-chip">
+                                <input asp-for="Saturday" class="admin-choice-chip__input" />
+                                <span>Sob</span>
+                            </label>
+                            <label class="admin-choice-chip">
+                                <input asp-for="Sunday" class="admin-choice-chip__input" />
+                                <span>Nd</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <label class="admin-toggle-card">
+                                <input asp-for="SkipDuplicates" class="admin-toggle-card__input" />
+                                <span>
+                                    <strong>Pomijaj duplikaty</strong>
+                                    <small>Jeśli identyczny termin dla tej samej usługi już istnieje, rekord nie zostanie dodany drugi raz.</small>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="admin-toggle-card">
+                                <input asp-for="IsBooked" class="admin-toggle-card__input" />
+                                <span>
+                                    <strong>Oznacz jako zajęte</strong>
+                                    <small>Przydatne, jeśli chcesz od razu zablokować wygenerowaną pulę terminów.</small>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 flex-wrap mt-4">
+                        <button type="submit" class="btn btn-primary admin-action-btn">Wygeneruj terminy</button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">Powrót</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

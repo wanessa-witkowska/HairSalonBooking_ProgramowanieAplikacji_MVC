@@ -1,0 +1,124 @@
+@model HairSalonBooking.ViewModels.AdminSlotsBulkEditViewModel
+
+@{
+    ViewData["Title"] = "Masowa edycja terminów";
+}
+
+<div class="container py-4 admin-page">
+    <div class="admin-header mb-4">
+        <div>
+            <h1>Masowa edycja terminów</h1>
+            <p>Edytujesz jednocześnie @Model.Slots.Count rekordów. Możesz zmienić je w tabeli lub użyć szybkich akcji dla całego zestawu.</p>
+        </div>
+    </div>
+
+    <form asp-action="BulkEdit" method="post" class="d-flex flex-column gap-4" data-bulk-edit-form>
+        <div class="card admin-card shadow-sm">
+            <div class="card-body p-4">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+
+                <div class="admin-bulk-tools">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-lg-5">
+                            <label class="form-label">Ustaw usługę dla wszystkich</label>
+                            <select class="form-select admin-input" data-bulk-apply="service">
+                                <option value="">Bez zmian</option>
+                                @foreach (var service in Model.ServiceOptions)
+                                {
+                                    <option value="@service.Value">@service.Text</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-lg-3">
+                            <label class="form-label">Ustaw status dla wszystkich</label>
+                            <select class="form-select admin-input" data-bulk-apply="status">
+                                <option value="">Bez zmian</option>
+                                <option value="false">Wolny</option>
+                                <option value="true">Zajęty</option>
+                            </select>
+                        </div>
+
+                        <div class="col-lg-4">
+                            <label class="form-label">Przesuń wszystkie godziny</label>
+                            <div class="input-group">
+                                <input type="number"
+                                       class="form-control admin-input"
+                                       data-bulk-shift-minutes
+                                       placeholder="np. 15 lub -30" />
+                                <button type="button" class="btn btn-outline-primary" data-bulk-shift-button>Przesuń</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card admin-card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table admin-table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Rekord</th>
+                                <th>Początek</th>
+                                <th>Koniec</th>
+                                <th>Status</th>
+                                <th>Usługa</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (var i = 0; i < Model.Slots.Count; i++)
+                            {
+                                <tr>
+                                    <td>
+                                        <input type="hidden" asp-for="Slots[i].Id" />
+                                        <span class="admin-slot-row-label">#@Model.Slots[i].Id</span>
+                                    </td>
+                                    <td>
+                                        <input asp-for="Slots[i].StartTime"
+                                               type="datetime-local"
+                                               class="form-control admin-table-input"
+                                               data-bulk-start />
+                                        <span asp-validation-for="Slots[i].StartTime" class="text-danger d-block mt-1"></span>
+                                    </td>
+                                    <td>
+                                        <input asp-for="Slots[i].EndTime"
+                                               type="datetime-local"
+                                               class="form-control admin-table-input"
+                                               data-bulk-end />
+                                        <span asp-validation-for="Slots[i].EndTime" class="text-danger d-block mt-1"></span>
+                                    </td>
+                                    <td>
+                                        <div class="form-check form-switch admin-switch-cell">
+                                            <input asp-for="Slots[i].IsBooked" class="form-check-input" data-bulk-status />
+                                            <label asp-for="Slots[i].IsBooked" class="form-check-label">Zajęty</label>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <select asp-for="Slots[i].ServiceId"
+                                                asp-items="Model.ServiceOptions"
+                                                class="form-select admin-table-input"
+                                                data-bulk-service></select>
+                                        <span asp-validation-for="Slots[i].ServiceId" class="text-danger d-block mt-1"></span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+            <button type="submit" class="btn btn-primary admin-action-btn">Zapisz wszystkie zmiany</button>
+            <a asp-action="Index" class="btn btn-outline-secondary">Powrót</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

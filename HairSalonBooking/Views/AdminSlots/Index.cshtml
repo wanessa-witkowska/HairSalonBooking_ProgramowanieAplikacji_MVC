@@ -1,36 +1,144 @@
-@model IEnumerable<HairSalonBooking.Models.AvailableSlot>
+@model HairSalonBooking.ViewModels.AdminSlotsIndexViewModel
 
 @{
     ViewData["Title"] = "Zarządzanie terminami";
+    var totalCount = Model.Slots.Count;
 }
 
-<div class="container py-4 admin-page">
+<div class="container py-4 admin-page" data-selection-scope>
+    <form id="bulkSelectionForm" asp-action="BulkEditSelection" method="post"></form>
+
     <div class="admin-header mb-4">
         <div>
             <h1>Zarządzanie terminami</h1>
-            <p>Dodawaj, edytuj i usuwaj dostępne terminy rezerwacji.</p>
+            <p>Filtruj terminy po kolumnach, zaznacz rekordy i edytuj je hurtowo albo wygeneruj większą pulę slotów naraz.</p>
         </div>
 
-        <a asp-action="Create" class="btn btn-primary admin-action-btn">Dodaj termin</a>
+        <div class="d-flex gap-2 flex-wrap">
+            <a asp-action="Create" class="btn btn-primary admin-action-btn">Dodaj termin</a>
+            <a asp-action="BulkCreate" class="btn btn-outline-primary admin-action-btn">Dodaj wiele</a>
+        </div>
     </div>
 
-    <div class="card admin-card shadow-sm">
+    @if (TempData["Success"] is string success)
+    {
+        <div class="alert alert-success">@success</div>
+    }
+
+    @if (TempData["Error"] is string error)
+    {
+        <div class="alert alert-danger">@error</div>
+    }
+
+    <div class="card admin-card shadow-sm" data-filter-table>
+        <div class="admin-table-toolbar">
+            <div class="admin-table-toolbar__summary">
+                <span>Widoczne: <strong data-visible-count>@totalCount</strong> / @totalCount</span>
+                <span>Zaznaczone: <strong data-selected-count>0</strong></span>
+            </div>
+
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-clear-table-filters>Wyczyść filtry</button>
+        </div>
+
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table admin-table align-middle mb-0">
                     <thead>
                         <tr>
+                            <th class="admin-table-checkbox text-center">
+                                <input type="checkbox" class="form-check-input" data-select-all aria-label="Zaznacz widoczne terminy" />
+                            </th>
                             <th>Początek</th>
                             <th>Koniec</th>
                             <th>Status</th>
                             <th>Usługa</th>
                             <th class="text-end">Akcje</th>
                         </tr>
+                        <tr class="admin-table-filters">
+                            <th></th>
+                            <th>
+                                <input type="text"
+                                       class="form-control form-control-sm admin-table-filter"
+                                       placeholder="np. 31.03.2026 lub 09:00"
+                                       data-filter-key="start" />
+                            </th>
+                            <th>
+                                <input type="text"
+                                       class="form-control form-control-sm admin-table-filter"
+                                       placeholder="np. 31.03.2026 lub 10:30"
+                                       data-filter-key="end" />
+                            </th>
+                            <th>
+                                <select class="form-select form-select-sm admin-table-filter"
+                                        data-filter-key="status"
+                                        data-filter-match="exact">
+                                    <option value="">Wszystkie</option>
+                                    <option value="wolny">Wolny</option>
+                                    <option value="zajęty">Zajęty</option>
+                                </select>
+                            </th>
+                            <th>
+                                <select class="form-select form-select-sm admin-table-filter"
+                                        data-filter-key="service-id"
+                                        data-filter-match="exact">
+                                    <option value="">Wszystkie</option>
+                                    @foreach (var service in Model.ServiceOptions)
+                                    {
+                                        <option value="@service.Value">@service.Text</option>
+                                    }
+                                </select>
+                            </th>
+                            <th class="text-end">
+                                <div class="admin-table-bulk-actions">
+                                    <button type="submit"
+                                            form="bulkSelectionForm"
+                                            formaction="@Url.Action("BulkEditSelection")"
+                                            formmethod="post"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            data-requires-selection
+                                            disabled>
+                                        Edytuj wiele
+                                    </button>
+                                    <button type="submit"
+                                            form="bulkSelectionForm"
+                                            formaction="@Url.Action("BulkDeleteSelected")"
+                                            formmethod="post"
+                                            class="btn btn-sm btn-outline-danger"
+                                            data-requires-selection
+                                            data-confirm="Czy na pewno usunąć zaznaczone terminy?"
+                                            disabled>
+                                        Usuń wiele
+                                    </button>
+                                </div>
+                            </th>
+                        </tr>
                     </thead>
                     <tbody>
-                        @foreach (var item in Model)
+                        @if (Model.Slots.Count == 0)
                         {
                             <tr>
+                                <td colspan="6" class="text-center text-muted py-4">Brak zapisanych terminów.</td>
+                            </tr>
+                        }
+
+                        @foreach (var item in Model.Slots)
+                        {
+                            var statusText = item.IsBooked ? "zajęty" : "wolny";
+
+                            <tr data-filter-row
+                                data-filter-start="@item.StartTime.ToString("dd.MM.yyyy HH:mm")"
+                                data-filter-end="@item.EndTime.ToString("dd.MM.yyyy HH:mm")"
+                                data-filter-status="@statusText"
+                                data-filter-service-id="@item.ServiceId">
+                                <td class="text-center">
+                                    <input type="checkbox"
+                                           class="form-check-input"
+                                           name="selectedIds"
+                                           value="@item.Id"
+                                           form="bulkSelectionForm"
+                                           data-select-item
+                                           aria-label="Zaznacz termin @item.StartTime.ToString("dd.MM.yyyy HH:mm")" />
+                                </td>
                                 <td>@item.StartTime.ToString("dd.MM.yyyy HH:mm")</td>
                                 <td>@item.EndTime.ToString("dd.MM.yyyy HH:mm")</td>
                                 <td>
@@ -43,7 +151,7 @@
                                         <span class="badge rounded-pill bg-success">Wolny</span>
                                     }
                                 </td>
-                                <td>@item.Service?.Name</td>
+                                <td>@item.ServiceName</td>
                                 <td class="text-end">
                                     <div class="d-flex justify-content-end gap-2 flex-wrap">
                                         <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edytuj</a>
@@ -51,6 +159,13 @@
                                         <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Usuń</a>
                                     </div>
                                 </td>
+                            </tr>
+                        }
+
+                        @if (Model.Slots.Count > 0)
+                        {
+                            <tr data-empty-state hidden>
+                                <td colspan="6" class="text-center text-muted py-4">Brak terminów pasujących do aktywnych filtrów.</td>
                             </tr>
                         }
                     </tbody>
