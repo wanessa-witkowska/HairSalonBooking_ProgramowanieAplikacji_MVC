@@ -1,0 +1,14 @@
+@page
+@model PersonalDataModel
+@{
+    ViewData["Title"] = "Dane osobowe";
+    ViewData["ActivePage"] = ManageNavPages.PersonalData;
+}
+
+<h3>Dane osobowe</h3>
+
+<p class="mb-3">
+    W tej sekcji możesz tylko usunąć konto. Operacja jest nieodwracalna.
+</p>
+
+<a asp-page="./DeletePersonalData" class="btn btn-danger">Usuń konto</a>

@@ -1,0 +1,31 @@
+@page
+@model DeletePersonalDataModel
+@{
+    ViewData["Title"] = "Usuń konto";
+    ViewData["ActivePage"] = ManageNavPages.PersonalData;
+}
+
+<h3>Usuń konto</h3>
+
+<div class="alert alert-danger" role="alert">
+    Usunięcie konta jest trwałe i nie można go cofnąć.
+</div>
+
+<form id="delete-user" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+    @if (Model.RequirePassword)
+    {
+        <div class="form-floating mb-3">
+            <input asp-for="Input.Password" class="form-control" autocomplete="current-password" placeholder="Hasło" />
+            <label asp-for="Input.Password"></label>
+            <span asp-validation-for="Input.Password" class="text-danger"></span>
+        </div>
+    }
+
+    <button class="w-100 btn btn-lg btn-danger" type="submit">Usuń konto</button>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

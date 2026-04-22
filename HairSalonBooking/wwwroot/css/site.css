@@ -841,12 +841,13 @@ body.identity-manage-shell .main-content > h1 {
 }
 
 body.identity-manage-shell .main-content > div:first-of-type {
-    max-width: 1120px;
+    width: min(1240px, calc(100% - 2rem));
+    max-width: 1240px;
     margin: 0 auto;
     background: rgba(255, 255, 255, 0.97);
     border-radius: 1.5rem;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
-    padding: 2rem;
+    padding: 2.25rem;
 }
 
 body.identity-manage-shell .main-content > div:first-of-type > h2 {
@@ -867,6 +868,7 @@ body.identity-manage-shell .main-content .nav.nav-pills {
     border-radius: 1.1rem;
     padding: 1rem;
     box-shadow: inset 0 0 0 1px #eee4ea;
+    width: 100%;
 }
 
 body.identity-manage-shell .main-content .nav.nav-pills .nav-link {
@@ -890,11 +892,28 @@ body.identity-manage-shell .main-content .col-lg-9 > h3 {
     margin-bottom: 1.25rem;
 }
 
+body.identity-manage-shell .main-content .col-lg-9 {
+    min-width: 0;
+}
+
+body.identity-manage-shell .main-content form {
+    width: 100%;
+    max-width: 720px;
+}
+
 body.identity-manage-shell .main-content .form-floating > .form-control,
 body.identity-manage-shell .main-content .form-floating > .form-select {
     border-radius: 0.95rem;
     border: 1px solid #d8c8d3;
     min-height: 58px;
+}
+
+body.identity-manage-shell .main-content .form-floating,
+body.identity-manage-shell .main-content .btn-primary,
+body.identity-manage-shell .main-content .btn-outline-secondary,
+body.identity-manage-shell .main-content .btn-danger,
+body.identity-manage-shell .main-content .alert {
+    width: 100%;
 }
 
 body.identity-manage-shell .main-content .form-floating > .form-control:focus,
@@ -912,11 +931,34 @@ body.identity-manage-shell .main-content .btn-primary {
 
 body.identity-manage-shell .main-content .row {
     row-gap: 1.5rem;
+    column-gap: 2rem;
 }
 
 body.identity-manage-shell .main-content .text-danger,
 body.identity-manage-shell .main-content .validation-summary-errors {
     margin-top: 0.35rem;
+}
+
+@media (min-width: 1200px) {
+    body.identity-manage-shell .main-content .col-lg-3 {
+        flex: 0 0 240px;
+        width: 240px;
+    }
+
+    body.identity-manage-shell .main-content .col-lg-9 {
+        flex: 1 1 0;
+        width: calc(100% - 240px - 2rem);
+        max-width: none;
+    }
+}
+
+@media (max-width: 1199.98px) {
+    body.identity-manage-shell .main-content .col-lg-3,
+    body.identity-manage-shell .main-content .col-lg-9 {
+        flex: 0 0 100%;
+        width: 100%;
+        max-width: 100%;
+    }
 }
 
 @media (max-width: 991.98px) {
@@ -929,7 +971,12 @@ body.identity-manage-shell .main-content .validation-summary-errors {
     }
 
     body.identity-manage-shell .main-content > div:first-of-type {
+        width: 100%;
         padding: 1.35rem;
+    }
+
+    body.identity-manage-shell .main-content .row {
+        column-gap: 0;
     }
 }
 
