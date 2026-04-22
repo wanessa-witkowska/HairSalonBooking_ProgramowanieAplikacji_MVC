@@ -57,6 +57,12 @@ public class AdminReservationsController : Controller
             return NotFound();
         }
 
+        if (reservation.Status != ReservationStatus.Pending)
+        {
+            TempData["Success"] = "Tylko rezerwacje oczekujące mogą zostać zatwierdzone.";
+            return RedirectToAction(nameof(Index));
+        }
+
         reservation.Status = ReservationStatus.Approved;
         reservation.AvailableSlot.IsBooked = true;
 
@@ -77,6 +83,8 @@ public class AdminReservationsController : Controller
     {
         var reservation = await _context.Reservations
             .Include(r => r.AvailableSlot)
+            .Include(r => r.User)
+            .Include(r => r.Service)
             .FirstOrDefaultAsync(r => r.Id == id);
 
         if (reservation is null)
@@ -84,10 +92,21 @@ public class AdminReservationsController : Controller
             return NotFound();
         }
 
+        if (reservation.Status != ReservationStatus.Pending)
+        {
+            TempData["Success"] = "Tylko rezerwacje oczekujące mogą zostać odrzucone.";
+            return RedirectToAction(nameof(Index));
+        }
+
         reservation.Status = ReservationStatus.Rejected;
         reservation.AvailableSlot.IsBooked = false;
 
         await _context.SaveChangesAsync();
+
+        await _emailService.SendAsync(
+            reservation.User.Email!,
+            "Twoja rezerwacja została odrzucona",
+            $"<h2>Rezerwacja odrzucona</h2><p>Usługa: <strong>{reservation.Service.Name}</strong></p><p>Termin: <strong>{reservation.ReservationDate:dd.MM.yyyy HH:mm}</strong></p><p>Skontaktuj się z salonem, jeśli chcesz ustalić inny termin.</p>");
 
         TempData["Success"] = "Rezerwacja została odrzucona.";
         return RedirectToAction(nameof(Index));

@@ -151,11 +151,9 @@ public class ReservationsController : Controller
             return View(model);
         }
 
-        slot!.IsBooked = true;
-
         var reservation = new Reservation
         {
-            ReservationDate = slot.StartTime,
+            ReservationDate = slot!.StartTime,
             Status = ReservationStatus.Pending,
             Notes = model.Notes,
             UserId = _userManager.GetUserId(User)!,
@@ -282,8 +280,7 @@ public class ReservationsController : Controller
         if (reservation.AvailableSlotId != model.AvailableSlotId)
         {
             reservation.AvailableSlot.IsBooked = false;
-            selectedSlot!.IsBooked = true;
-            reservation.AvailableSlotId = selectedSlot.Id;
+            reservation.AvailableSlotId = selectedSlot!.Id;
             reservation.ReservationDate = selectedSlot.StartTime;
         }
 
@@ -432,11 +429,9 @@ public class ReservationsController : Controller
             return RedirectToAction(nameof(Calendar));
         }
 
-        slot.IsBooked = true;
-
         var reservation = new Reservation
         {
-            ReservationDate = slot.StartTime,
+            ReservationDate = slot!.StartTime,
             Status = ReservationStatus.Pending,
             Notes = notes,
             UserId = _userManager.GetUserId(User)!,
