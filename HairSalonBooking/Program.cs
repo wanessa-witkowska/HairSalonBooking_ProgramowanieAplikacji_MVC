@@ -1,6 +1,7 @@
 using HairSalonBooking.Data;
 using HairSalonBooking.Models;
 using HairSalonBooking.Services;
+using Microsoft.Data.Sqlite;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
@@ -10,8 +11,10 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
+EnsureSqliteDataDirectory(connectionString, builder.Environment.ContentRootPath);
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlite(connectionString));
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -67,6 +70,30 @@ app.MapControllerRoute(
 app.MapRazorPages();
 
 app.Run();
+
+static void EnsureSqliteDataDirectory(string connectionString, string contentRootPath)
+{
+    var sqliteConnection = new SqliteConnectionStringBuilder(connectionString);
+
+    if (string.IsNullOrWhiteSpace(sqliteConnection.DataSource) || sqliteConnection.DataSource == ":memory:")
+    {
+        return;
+    }
+
+    var databasePath = sqliteConnection.DataSource;
+
+    if (!Path.IsPathRooted(databasePath))
+    {
+        databasePath = Path.Combine(contentRootPath, databasePath);
+    }
+
+    var directory = Path.GetDirectoryName(databasePath);
+
+    if (!string.IsNullOrWhiteSpace(directory))
+    {
+        Directory.CreateDirectory(directory);
+    }
+}
 
 file sealed class IdentityEmailSenderAdapter : IEmailSender
 {

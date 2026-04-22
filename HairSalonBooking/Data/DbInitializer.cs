@@ -12,7 +12,14 @@ public static class DbInitializer
         var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = serviceProvider.GetRequiredService<UserManager<AppUser>>();
 
-        await context.Database.MigrateAsync();
+        if (context.Database.IsSqlite())
+        {
+            await context.Database.EnsureCreatedAsync();
+        }
+        else
+        {
+            await context.Database.MigrateAsync();
+        }
 
         string[] roles = ["Admin", "User"];
 
