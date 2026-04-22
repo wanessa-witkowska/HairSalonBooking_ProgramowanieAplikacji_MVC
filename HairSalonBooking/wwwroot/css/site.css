@@ -504,10 +504,20 @@ body {
     flex-wrap: wrap;
 }
 
+    .page-title,
+    .main-content .container.py-4 > h1:not(.display-4):not(.text-danger),
+    .main-content .container.py-4 > .d-flex h1,
+    .main-content .container.py-4 .card-body h1:first-child,
     .admin-header h1 {
-        margin-bottom: 0.4rem;
         color: var(--color-primary);
         font-weight: 700;
+        letter-spacing: -0.03em;
+        line-height: 1.05;
+        font-size: clamp(1.65rem, 1.95vw, 2.35rem);
+    }
+
+    .admin-header h1 {
+        margin-bottom: 0.4rem;
     }
 
     .admin-header p {
