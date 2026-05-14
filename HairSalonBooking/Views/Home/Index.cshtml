@@ -3,28 +3,71 @@
 }
 
 <section class="hero-section hero-full">
-    <div class="container py-5">
+    <div class="container hero-container py-5">
         <div class="row align-items-center g-5">
-            <div class="col-lg-6">
+            <div class="col-lg-5">
                 <span class="hero-badge">Salon fryzjerski online</span>
-                <h1 class="display-4 fw-bold mt-3">Umów wizytę szybko i wygodnie</h1>
+                <h1 class="hero-title mt-3">Zarezerwuj termin bez czekania</h1>
                 <p class="lead mt-3">
-                    Przeglądaj usługi, wybierz dogodny termin i zarządzaj swoimi rezerwacjami w jednym miejscu.
+                    Wybierz usługę, sprawdź wolne godziny i zapisz się w kilka kliknięć. Panel klienta i kalendarz są zawsze pod ręką.
                 </p>
-                <div class="d-flex gap-3 mt-4">
+                <div class="d-flex gap-3 mt-4 flex-wrap">
                     <a asp-controller="Services" asp-action="Index" class="btn btn-primary btn-lg">Zobacz usługi</a>
                     <a asp-controller="Reservations" asp-action="Calendar" class="btn btn-outline-light btn-lg">Kalendarz</a>
                 </div>
+
+                <div class="hero-stats mt-5">
+                    <div>
+                        <strong>24/7</strong>
+                        <span>rezerwacje online</span>
+                    </div>
+                    <div>
+                        <strong>1 min</strong>
+                        <span>do wyboru terminu</span>
+                    </div>
+                    <div>
+                        <strong>0</strong>
+                        <span>telefonów</span>
+                    </div>
+                </div>
             </div>
-            <div class="col-lg-6">
-                <div class="hero-card shadow-lg">
-                    <h3>Dlaczego warto?</h3>
-                    <ul class="mt-3 mb-0">
-                        <li>prosty system rezerwacji online</li>
-                        <li>panel administratora</li>
-                        <li>powiadomienia mailowe</li>
-                        <li>filtrowanie i wyszukiwarka usług</li>
-                    </ul>
+            <div class="col-lg-7">
+                <div class="hero-showcase">
+                    <div class="hero-showcase__scene" aria-hidden="true">
+                        <div class="hero-scene__mirror"></div>
+                        <div class="hero-scene__chair"></div>
+                        <div class="hero-scene__counter"></div>
+                    </div>
+
+                    <div class="hero-booking-panel">
+                        <span>Sprawdź najbliższy wolny termin</span>
+                        <strong>Może być już dziś</strong>
+                        <small>Strzeżenia, modelowania, pielęgnacje</small>
+                        <a asp-controller="Reservations" asp-action="Calendar" class="btn btn-primary btn-sm">Sprawdź godziny</a>
+                    </div>
+
+                    <div class="hero-services-panel">
+                        <div>
+                            <span>Popularne</span>
+                            <strong>Koloryzacja</strong>
+                            <small>od 180 zł</small>
+                        </div>
+                        <div>
+                            <span>Szybko</span>
+                            <strong>Strzyżenie</strong>
+                            <small>45 min</small>
+                        </div>
+                        <div>
+                            <span>Relax</span>
+                            <strong>Pielęgnacja</strong>
+                            <small>od 90 zł</small>
+                        </div>
+                    </div>
+
+                    <div class="hero-accent-card">
+                        <span>98%</span>
+                        <small>wizyt potwierdzanych online</small>
+                    </div>
                 </div>
             </div>
         </div>
