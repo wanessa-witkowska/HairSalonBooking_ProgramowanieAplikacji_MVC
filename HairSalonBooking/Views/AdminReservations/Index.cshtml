@@ -38,24 +38,37 @@
             <tbody>
                 @foreach (var item in Model)
                 {
+                    var canApprove = item.Status == HairSalonBooking.Models.ReservationStatus.Pending;
+                    var canReject = item.Status == HairSalonBooking.Models.ReservationStatus.Pending
+                        || item.Status == HairSalonBooking.Models.ReservationStatus.Approved;
+
                     <tr>
-                        <td>@item.User.Email</td>
+                        <td>@(string.IsNullOrWhiteSpace(item.User?.Email) ? "[konto usunięte]" : item.User.Email)</td>
                         <td>@item.Service.Name</td>
                         <td>@item.ReservationDate.ToString("dd.MM.yyyy HH:mm")</td>
                         <td><partial name="_ReservationStatusBadge" model="item.Status" /></td>
-                        <td class="d-flex gap-2">
-                            @if (item.Status == HairSalonBooking.Models.ReservationStatus.Pending)
-                            {
-                                <form asp-action="Approve" method="post">
-                                    <input type="hidden" name="id" value="@item.Id" />
-                                    <button type="submit" class="btn btn-sm btn-success">Zatwierdź</button>
-                                </form>
+                        <td class="actions-cell">
+                            <div class="actions-wrap">
+                                @if (canApprove)
+                                {
+                                    <form asp-action="Approve" method="post">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <button type="submit" class="btn btn-sm btn-success">Zatwierdź</button>
+                                    </form>
+                                }
 
-                                <form asp-action="Reject" method="post">
-                                    <input type="hidden" name="id" value="@item.Id" />
-                                    <button type="submit" class="btn btn-sm btn-danger">Odrzuć</button>
-                                </form>
-                            }
+                                @if (canReject)
+                                {
+                                    <form asp-action="Reject" method="post">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <button type="submit" class="btn btn-sm btn-danger">Odrzuć</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </div>
                         </td>
                     </tr>
                 }

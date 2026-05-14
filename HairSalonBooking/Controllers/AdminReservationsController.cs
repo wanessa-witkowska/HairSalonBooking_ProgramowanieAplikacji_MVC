@@ -68,10 +68,13 @@ public class AdminReservationsController : Controller
 
         await _context.SaveChangesAsync();
 
-        await _emailService.SendAsync(
-            reservation.User.Email!,
-            "Twoja rezerwacja została zatwierdzona",
-            $"<h2>Rezerwacja zatwierdzona</h2><p>Usługa: <strong>{reservation.Service.Name}</strong></p><p>Termin: <strong>{reservation.ReservationDate:dd.MM.yyyy HH:mm}</strong></p>");
+        if (!string.IsNullOrWhiteSpace(reservation.User?.Email))
+        {
+            await _emailService.SendAsync(
+                reservation.User.Email,
+                "Twoja rezerwacja została zatwierdzona",
+                $"<h2>Rezerwacja zatwierdzona</h2><p>Usługa: <strong>{reservation.Service.Name}</strong></p><p>Termin: <strong>{reservation.ReservationDate:dd.MM.yyyy HH:mm}</strong></p>");
+        }
 
         TempData["Success"] = "Rezerwacja została zatwierdzona.";
         return RedirectToAction(nameof(Index));
@@ -92,9 +95,9 @@ public class AdminReservationsController : Controller
             return NotFound();
         }
 
-        if (reservation.Status != ReservationStatus.Pending)
+        if (reservation.Status != ReservationStatus.Pending && reservation.Status != ReservationStatus.Approved)
         {
-            TempData["Success"] = "Tylko rezerwacje oczekujące mogą zostać odrzucone.";
+            TempData["Success"] = "Tylko rezerwacje oczekujące lub zatwierdzone mogą zostać odrzucone.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -103,10 +106,13 @@ public class AdminReservationsController : Controller
 
         await _context.SaveChangesAsync();
 
-        await _emailService.SendAsync(
-            reservation.User.Email!,
-            "Twoja rezerwacja została odrzucona",
-            $"<h2>Rezerwacja odrzucona</h2><p>Usługa: <strong>{reservation.Service.Name}</strong></p><p>Termin: <strong>{reservation.ReservationDate:dd.MM.yyyy HH:mm}</strong></p><p>Skontaktuj się z salonem, jeśli chcesz ustalić inny termin.</p>");
+        if (!string.IsNullOrWhiteSpace(reservation.User?.Email))
+        {
+            await _emailService.SendAsync(
+                reservation.User.Email,
+                "Twoja rezerwacja została odrzucona",
+                $"<h2>Rezerwacja odrzucona</h2><p>Usługa: <strong>{reservation.Service.Name}</strong></p><p>Termin: <strong>{reservation.ReservationDate:dd.MM.yyyy HH:mm}</strong></p><p>Skontaktuj się z salonem, jeśli chcesz ustalić inny termin.</p>");
+        }
 
         TempData["Success"] = "Rezerwacja została odrzucona.";
         return RedirectToAction(nameof(Index));
