@@ -329,21 +329,95 @@ public class ReservationsController : Controller
 
     public async Task<IActionResult> Events(DateTime start, DateTime end)
     {
-        var events = await _context.AvailableSlots
+        var userId = _userManager.GetUserId(User);
+        var isAdmin = User.IsInRole("Admin");
+        var today = DateTime.Today;
+        var freeSlotsStart = start < today ? today : start;
+
+        var reservations = await _context.Reservations
+            .Include(r => r.Service)
+            .Include(r => r.AvailableSlot)
+            .Include(r => r.User)
+            .Where(r =>
+                (r.Status == ReservationStatus.Pending || r.Status == ReservationStatus.Approved) &&
+                r.ReservationDate >= start &&
+                r.AvailableSlot.EndTime <= end &&
+                (r.Status == ReservationStatus.Approved || isAdmin || r.UserId == userId))
+            .OrderBy(r => r.ReservationDate)
+            .ToListAsync();
+
+        var reservationEvents = reservations
+            .Select(r => new CalendarEvent
+            {
+                Title = r.Status == ReservationStatus.Pending
+                    ? $"{r.ReservationDate:HH:mm} Rezerwacja niepotwierdzona"
+                    : $"{r.ReservationDate:HH:mm} {r.Service.Name}",
+                Start = r.ReservationDate,
+                End = r.AvailableSlot.EndTime,
+                AllDay = false,
+                ClassName = r.Status == ReservationStatus.Pending
+                    ? "calendar-unconfirmed"
+                    : "calendar-booked-only",
+                Tooltip = r.Status == ReservationStatus.Pending
+                    ? BuildReservationTooltip(r, "Rezerwacja niepotwierdzona", isAdmin)
+                    : BuildReservationTooltip(r, "Termin zajęty", isAdmin)
+            })
+            .ToList();
+
+        var reservedSlotIds = await _context.Reservations
+            .Where(r => r.Status == ReservationStatus.Pending || r.Status == ReservationStatus.Approved)
+            .Select(r => r.AvailableSlotId)
+            .ToListAsync();
+
+        var manuallyBookedEvents = await _context.AvailableSlots
             .Include(s => s.Service)
             .Where(s =>
                 s.IsBooked &&
                 s.StartTime >= start &&
-                s.EndTime <= end)
+                s.EndTime <= end &&
+                !reservedSlotIds.Contains(s.Id))
             .OrderBy(s => s.StartTime)
-            .Select(s => new
+            .Select(s => new CalendarEvent
             {
-                title = $"{s.StartTime:HH:mm} {s.Service.Name}",
-                start = s.StartTime,
-                end = s.EndTime,
-                className = "calendar-booked-only"
+                Title = $"{s.StartTime:HH:mm} {s.Service.Name}",
+                Start = s.StartTime,
+                End = s.EndTime,
+                AllDay = false,
+                ClassName = "calendar-booked-only",
+                Tooltip = $"Status: Termin zajęty\nUsługa: {s.Service.Name}\nTermin: {s.StartTime:dd.MM.yyyy HH:mm} - {s.EndTime:HH:mm}"
             })
             .ToListAsync();
+
+        var freeSlotCandidates = await _context.AvailableSlots
+            .Include(s => s.Service)
+            .Where(s =>
+                s.Service.IsActive &&
+                !s.IsBooked &&
+                s.StartTime >= freeSlotsStart &&
+                s.EndTime <= end)
+            .OrderBy(s => s.StartTime)
+            .ToListAsync();
+
+        var blockedRanges = await GetBlockedRangesAsync(start, end);
+
+        var freeSlotEvents = freeSlotCandidates
+            .Where(slot => !blockedRanges.Any(block =>
+                Overlaps(slot.StartTime, slot.EndTime, block.Start, block.End)))
+            .GroupBy(slot => slot.StartTime.Date)
+            .Select(group => new CalendarEvent
+            {
+                Title = "Wolne terminy na usługi",
+                Start = group.Key,
+                End = null,
+                AllDay = true,
+                ClassName = "calendar-free-slots"
+            })
+            .ToList();
+
+        var events = reservationEvents
+            .Concat(manuallyBookedEvents)
+            .Concat(freeSlotEvents)
+            .ToList();
 
         return Json(events);
     }
@@ -504,6 +578,32 @@ public class ReservationsController : Controller
         return startA < endB && endA > startB;
     }
 
+    private static string BuildReservationTooltip(Reservation reservation, string statusText, bool includeClient)
+    {
+        var lines = new List<string>
+        {
+            $"Status: {statusText}",
+            $"Usługa: {reservation.Service.Name}",
+            $"Termin: {reservation.ReservationDate:dd.MM.yyyy HH:mm} - {reservation.AvailableSlot.EndTime:HH:mm}"
+        };
+
+        if (includeClient)
+        {
+            var client = string.IsNullOrWhiteSpace(reservation.User?.Email)
+                ? "[konto usunięte]"
+                : reservation.User.Email;
+
+            lines.Add($"Klient: {client}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(reservation.Notes))
+        {
+            lines.Add($"Uwagi: {reservation.Notes}");
+        }
+
+        return string.Join("\n", lines);
+    }
+
     private async Task<List<(DateTime Start, DateTime End)>> GetBlockedRangesAsync(
         DateTime rangeStart,
         DateTime rangeEnd,
@@ -542,5 +642,20 @@ public class ReservationsController : Controller
         var blockedRanges = await GetBlockedRangesAsync(slotStart, slotEnd, excludeReservationId);
 
         return blockedRanges.Any(r => Overlaps(slotStart, slotEnd, r.Start, r.End));
+    }
+
+    private sealed class CalendarEvent
+    {
+        public string Title { get; set; } = string.Empty;
+
+        public DateTime Start { get; set; }
+
+        public DateTime? End { get; set; }
+
+        public bool AllDay { get; set; }
+
+        public string ClassName { get; set; } = string.Empty;
+
+        public string? Tooltip { get; set; }
     }
 }

@@ -8,7 +8,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <div>
             <h1 class="mb-1">Kalendarz rezerwacji</h1>
-            <p class="text-muted mb-0">Na kalendarzu widoczne są tylko zajęte terminy. Kliknij dzień, aby utworzyć rezerwację.</p>
+            <p class="text-muted mb-0">Na kalendarzu widoczne są zajęte terminy oraz dni z wolnymi godzinami. Kliknij dzień, aby utworzyć rezerwację.</p>
         </div>
 
         <a asp-action="MyReservations" class="btn btn-outline-secondary">Powrót</a>
@@ -28,6 +28,14 @@
         <span class="legend-item">
             <span class="legend-dot legend-booked"></span>
             Termin zajęty
+        </span>
+        <span class="legend-item">
+            <span class="legend-dot legend-unconfirmed"></span>
+            Rezerwacja niepotwierdzona
+        </span>
+        <span class="legend-item">
+            <span class="legend-dot legend-free"></span>
+            Wolne terminy
         </span>
         <span class="legend-note">
             Kliknij wybrany dzień, aby otworzyć okno rezerwacji.
@@ -111,6 +119,7 @@
         const notesInput = document.getElementById('calendarNotes');
 
         const slotEndpoint = '@Url.Action("GetAvailableSlotsForDay", "Reservations")';
+        const tooltipEvents = ['calendar-booked-only', 'calendar-unconfirmed'];
 
         function formatPolishDate(dateStr) {
         const date = new Date(dateStr + 'T00:00:00');
@@ -192,6 +201,14 @@
 
         serviceSelect.addEventListener('change', loadSlotsForDay);
 
+        function openBookingModalForDate(dateStr) {
+        selectedDateInput.value = dateStr;
+        selectedDateDisplay.textContent = formatPolishDate(dateStr);
+
+        resetModalFields();
+        bookingModal.show();
+        }
+
         const calendar = new FullCalendar.Calendar(calendarEl, {
         locale: 'pl',
         initialView: 'dayGridMonth',
@@ -219,11 +236,51 @@
         return;
         }
 
-        selectedDateInput.value = info.dateStr;
-        selectedDateDisplay.textContent = formatPolishDate(info.dateStr);
+        openBookingModalForDate(info.dateStr);
+        },
+        eventClick: function (info) {
+        if (!info.event.classNames.includes('calendar-free-slots')) {
+        return;
+        }
 
-        resetModalFields();
-        bookingModal.show();
+        info.jsEvent.preventDefault();
+
+        const dateStr = info.event.startStr.substring(0, 10);
+        const clickedDate = new Date(dateStr + 'T00:00:00');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (clickedDate < today) {
+        return;
+        }
+
+        openBookingModalForDate(dateStr);
+        },
+        eventDidMount: function (info) {
+        const shouldShowTooltip = tooltipEvents.some(className => info.event.classNames.includes(className));
+        const tooltipText = info.event.extendedProps.tooltip;
+
+        if (!shouldShowTooltip || !tooltipText) {
+        return;
+        }
+
+        info.el.setAttribute('tabindex', '0');
+        info.el.setAttribute('data-bs-toggle', 'tooltip');
+        info.el.setAttribute('data-bs-placement', 'top');
+        info.el.setAttribute('data-bs-html', 'true');
+        info.el.setAttribute('title', tooltipText.replaceAll('\n', '<br>'));
+
+        bootstrap.Tooltip.getOrCreateInstance(info.el, {
+        container: 'body',
+        trigger: 'hover focus'
+        });
+        },
+        eventWillUnmount: function (info) {
+        const tooltip = bootstrap.Tooltip.getInstance(info.el);
+
+        if (tooltip) {
+        tooltip.dispose();
+        }
         }
         });
 

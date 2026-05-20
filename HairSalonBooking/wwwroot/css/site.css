@@ -1274,6 +1274,10 @@ body {
     background: var(--color-danger);
 }
 
+.legend-unconfirmed {
+    background: var(--color-accent);
+}
+
 #calendar {
     min-height: 720px;
 }
@@ -1415,6 +1419,41 @@ body {
     .fc .fc-list-event.calendar-booked-only:hover {
         background: #983522 !important;
     }
+
+.fc .calendar-unconfirmed,
+.fc .fc-daygrid-event.calendar-unconfirmed,
+.fc .fc-list-event.calendar-unconfirmed {
+    background: var(--color-accent) !important;
+    border: none !important;
+    color: var(--color-primary) !important;
+    border-radius: 0.7rem !important;
+    padding: 0.2rem 0.45rem !important;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.fc .calendar-free-slots,
+.fc .fc-daygrid-event.calendar-free-slots,
+.fc .fc-list-event.calendar-free-slots {
+    background: var(--color-secondary) !important;
+    border: none !important;
+    color: #ffffff !important;
+    border-radius: 0.7rem !important;
+    padding: 0.2rem 0.45rem !important;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.fc .calendar-free-slots:hover,
+.fc .calendar-free-slots:focus,
+.fc .fc-daygrid-event.calendar-free-slots:hover,
+.fc .fc-daygrid-event.calendar-free-slots:focus,
+.fc .fc-list-event.calendar-free-slots:hover,
+.fc .fc-list-event.calendar-free-slots:focus {
+    background: var(--color-secondary-dark) !important;
+    color: #ffffff !important;
+}
 
 .calendar-modal {
     border: none;
